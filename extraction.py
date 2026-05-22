@@ -77,47 +77,61 @@ ALLERGENS - estimer forventede allergener for HVER rett:
 """
 
 
-def _compress_image(image_bytes, max_bytes=4_500_000):
+def _compress_image(image_bytes, max_b64_bytes=4_900_000):
     """
-    Krymp et bilde slik at det holder seg trygt under API-grensa paa 5 MB.
+    Krymp et bilde slik at den BASE64-KODEDE versjonen holder seg under
+    API-grensa paa 5 MB.
 
-    Telefonbilder er ofte 6-12 MB. Vi skalerer ned og rekomprimerer til
-    JPEG til bildet er smaa nok. Menytekst er fullt lesbar i lavere
-    opplosning, saa dette paavirker ikke ekstraksjonskvaliteten merkbart.
+    VIKTIG: API-grensa gjelder den base64-kodede strengen, ikke raa-fila.
+    Base64 gjor data ca. 33 % storre, saa vi maaler base64-storrelsen
+    direkte i stedet for raa bytes.
+
+    Telefonbilder er ofte 6-12 MB. Menytekst er fullt lesbar i lavere
+    opplosning, saa nedskalering paavirker ikke ekstraksjonen merkbart.
 
     Returnerer (nye_bytes, media_type).
     """
-    if len(image_bytes) <= max_bytes:
-        return image_bytes, None  # allerede liten nok, behold som den er
-
+    import base64 as _b64
     from io import BytesIO
     from PIL import Image
+
+    def _b64_len(data):
+        # storrelsen paa base64-strengen uten aa faktisk kode alt i minnet
+        return (len(data) + 2) // 3 * 4
+
+    # Allerede liten nok? Behold som den er.
+    if _b64_len(image_bytes) <= max_b64_bytes:
+        return image_bytes, None
 
     img = Image.open(BytesIO(image_bytes))
     if img.mode in ("RGBA", "P", "LA"):
         img = img.convert("RGB")
 
-    # Skaler ned hvis bildet er veldig stort i pikseldimensjon.
-    max_dim = 2200
-    if max(img.size) > max_dim:
-        ratio = max_dim / max(img.size)
-        img = img.resize(
-            (int(img.size[0] * ratio), int(img.size[1] * ratio)),
-            Image.LANCZOS,
-        )
+    # Skaler ned i pikseldimensjon, og senk JPEG-kvaliteten trinnvis.
+    # Vi proever flere kombinasjoner til base64-storrelsen er trygg.
+    for max_dim in (2200, 1800, 1500, 1200, 1000):
+        work = img
+        if max(work.size) > max_dim:
+            ratio = max_dim / max(work.size)
+            work = work.resize(
+                (max(1, int(work.size[0] * ratio)),
+                 max(1, int(work.size[1] * ratio))),
+                Image.LANCZOS,
+            )
+        for quality in (85, 70, 55, 40):
+            buf = BytesIO()
+            work.save(buf, format="JPEG", quality=quality)
+            data = buf.getvalue()
+            if _b64_len(data) <= max_b64_bytes:
+                return data, "image/jpeg"
 
-    # Senk JPEG-kvaliteten trinnvis til vi er under grensa.
-    for quality in (85, 70, 55, 40):
-        buf = BytesIO()
-        img.save(buf, format="JPEG", quality=quality)
-        data = buf.getvalue()
-        if len(data) <= max_bytes:
-            return data, "image/jpeg"
-
-    # Siste utvei: skaler ytterligere ned.
-    img = img.resize((img.size[0] // 2, img.size[1] // 2), Image.LANCZOS)
+    # Siste utvei: kraftig nedskalering.
+    work = img.resize(
+        (max(1, img.size[0] // 4), max(1, img.size[1] // 4)),
+        Image.LANCZOS,
+    )
     buf = BytesIO()
-    img.save(buf, format="JPEG", quality=55)
+    work.save(buf, format="JPEG", quality=50)
     return buf.getvalue(), "image/jpeg"
 
 
