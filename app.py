@@ -15,7 +15,7 @@ import streamlit as st
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
-from extraction import extract_menu
+from extraction import extract_menu_from_files
 from rules import detect_allergens, to_title_case, to_sentence_case
 
 # --- MDS-kolonner. Speiler malen fra MDS sitt CSV-output. -------------------
@@ -267,10 +267,12 @@ if "menu_df" not in st.session_state:
 uploaded = st.file_uploader(
     "Last opp meny",
     type=["pdf", "docx", "xlsx", "xls", "jpg", "jpeg", "png"],
-    help="PDF, Word, Excel eller bilde av menyen.",
+    accept_multiple_files=True,
+    help="PDF, Word, Excel eller bilde av menyen. Du kan laste opp "
+         "flere bilder av samme meny \u2013 de analyseres samlet.",
 )
 analyze_file = st.button("Analyser meny", type="primary",
-                         disabled=uploaded is None)
+                         disabled=not uploaded)
 
 st.caption(
     "\U0001F4A1 Meny p\u00e5 nett? \u00c5pne siden i nettleseren, scroll "
@@ -279,17 +281,18 @@ st.caption(
 )
 
 # --- Filopplasting -----------------------------------------------------------
-if analyze_file and uploaded is not None:
-    with st.spinner("Analyserer menyen \u2026"):
+if analyze_file and uploaded:
+    with st.spinner(f"Analyserer {len(uploaded)} fil(er) \u2026"):
         try:
-            items = extract_menu(
-                uploaded.getvalue(), uploaded.name, api_key or None)
+            files = [(f.getvalue(), f.name) for f in uploaded]
+            items = extract_menu_from_files(files, api_key or None)
             if not items:
-                st.warning("Fant ingen menyelementer i filen.")
+                st.warning("Fant ingen menyelementer i filen(e).")
             else:
                 st.session_state.menu_df = items_to_dataframe(items)
-                st.success(f"Hentet ut {len(items)} element(er). "
-                           "Rediger ved behov under.")
+                st.success(f"Hentet ut {len(items)} element(er) fra "
+                           f"{len(uploaded)} fil(er). Rediger ved behov "
+                           "under.")
         except ValueError as e:
             st.error(str(e))
         except Exception as e:
