@@ -77,13 +77,60 @@ ALLERGENS - estimer forventede allergener for HVER rett:
 """
 
 
+def _compress_image(image_bytes, max_bytes=4_500_000):
+    """
+    Krymp et bilde slik at det holder seg trygt under API-grensa paa 5 MB.
+
+    Telefonbilder er ofte 6-12 MB. Vi skalerer ned og rekomprimerer til
+    JPEG til bildet er smaa nok. Menytekst er fullt lesbar i lavere
+    opplosning, saa dette paavirker ikke ekstraksjonskvaliteten merkbart.
+
+    Returnerer (nye_bytes, media_type).
+    """
+    if len(image_bytes) <= max_bytes:
+        return image_bytes, None  # allerede liten nok, behold som den er
+
+    from io import BytesIO
+    from PIL import Image
+
+    img = Image.open(BytesIO(image_bytes))
+    if img.mode in ("RGBA", "P", "LA"):
+        img = img.convert("RGB")
+
+    # Skaler ned hvis bildet er veldig stort i pikseldimensjon.
+    max_dim = 2200
+    if max(img.size) > max_dim:
+        ratio = max_dim / max(img.size)
+        img = img.resize(
+            (int(img.size[0] * ratio), int(img.size[1] * ratio)),
+            Image.LANCZOS,
+        )
+
+    # Senk JPEG-kvaliteten trinnvis til vi er under grensa.
+    for quality in (85, 70, 55, 40):
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=quality)
+        data = buf.getvalue()
+        if len(data) <= max_bytes:
+            return data, "image/jpeg"
+
+    # Siste utvei: skaler ytterligere ned.
+    img = img.resize((img.size[0] // 2, img.size[1] // 2), Image.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=55)
+    return buf.getvalue(), "image/jpeg"
+
+
 def _b64_image(image_bytes, media_type):
+    compressed, new_type = _compress_image(image_bytes)
+    if new_type:
+        media_type = new_type
     return {
         "type": "image",
         "source": {
             "type": "base64",
             "media_type": media_type,
-            "data": base64.standard_b64encode(image_bytes).decode("utf-8"),
+            "data": base64.standard_b64encode(compressed).decode("utf-8"),
         },
     }
 
