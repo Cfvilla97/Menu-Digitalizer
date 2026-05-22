@@ -1,0 +1,21 @@
+# Hemmeligheter - skal ALDRI til GitHub
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Midlertidige filer
+*.log
+/tmp/
