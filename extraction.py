@@ -21,7 +21,7 @@ import os
 
 import anthropic
 
-MODEL = "claude-opus-4-20250514"
+MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 8000
 
 # Systemprompt som styrer ekstraksjonen. Reglene speiler MDS-skjemaet
