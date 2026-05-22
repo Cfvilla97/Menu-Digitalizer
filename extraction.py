@@ -35,10 +35,11 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
   "items": [
     {
       "title": "Produktnavn slik det staar paa menyen",
-      "description": "Beskrivelse / ingredienser hvis oppgitt, ellers tom streng",
+      "description": "Fyldig beskrivelse av retten. Avsluttes med punktum.",
       "price": 189.0,
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
-      "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng"
+      "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng",
+      "allergens": "Egg, Peanotter (typisk for retten - bekreft)"
     }
   ]
 }
@@ -50,7 +51,29 @@ Viktige regler:
   og bruk "variation"-feltet (f.eks. "Liten", "Stor", "0,5L"). IKKE putt storrelsen i tittelen.
 - Ta med ALLE retter, ogsaa drikke og barnemeny.
 - Hvis samme rett staar to ganger paa menyen, ta den med to ganger (selgeren rydder).
-- Beskrivelser: skriv av det som staar, ikke dikt opp ingredienser.
+
+BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
+- Hvis menyen har en beskrivelse: bruk den, men gjor den fyldig og innholdsrik.
+- Hvis menyen mangler beskrivelse: skriv en fyldig beskrivelse basert paa
+  hva retten ER (rettnavnet og kjente kjennetegn ved retten).
+- IKKE dikt opp spesifikke ingredienser som retten ikke har. Hold deg til
+  det retten typisk inneholder.
+- Skriv i sentence case (stor forbokstav forst, ikke title case).
+- Avslutt ALLTID med punktum.
+
+ALLERGENS - estimer forventede allergener for HVER rett:
+- Bruk de 14 EU-allergenene: Gluten, Skalldyr, Egg, Fisk, Peanotter, Soya,
+  Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
+- Vurder bade ingredienser nevnt i beskrivelsen OG hva retten typisk
+  inneholder (f.eks. Pad Thai inneholder normalt peanotter, egg og fisk).
+- Format:
+  * Allergen nevnt direkte i menyteksten -> bare navnet: "Egg, Gluten"
+  * Allergen typisk for retten, men ikke eksplisitt nevnt ->
+    "Peanotter (typisk for retten - bekreft)"
+  * Klarer du ikke vurdere (f.eks. ukjent rett, bare et merkenavn) ->
+    "Sjekk med vendor"
+- Skriv ALDRI "Ingen allergener" som en sikker paastand. Er du i tvil,
+  skriv heller "Sjekk med vendor".
 """
 
 
