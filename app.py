@@ -116,13 +116,20 @@ def items_to_dataframe(items):
         title = to_title_case(str(it.get("title", "")).strip())
         desc = to_sentence_case(str(it.get("description", "")).strip())
         price = it.get("price")
+
+        # Allergener: bruk modellens vurdering (rett-basert). Faller
+        # tilbake paa ordbasert utledning hvis modellfeltet er tomt.
+        allergens = str(it.get("allergens", "")).strip()
+        if not allergens:
+            allergens = detect_allergens(desc)
+
         rows.append({
             "Tittel": title,
             "Beskrivelse": desc,
             "Variant": str(it.get("variation", "")).strip(),
             "Pris (NOK)": price if price is not None else 0.0,
             "Kategori": str(it.get("category", "")).strip(),
-            "Allergener": detect_allergens(desc),
+            "Allergener": allergens,
         })
     return pd.DataFrame(rows, columns=[
         "Tittel", "Beskrivelse", "Variant", "Pris (NOK)",
