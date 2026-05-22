@@ -189,6 +189,45 @@ def extract_menu(file_bytes, filename, api_key=None):
     return extract_menu_from_images(images, api_key)
 
 
+def extract_menu_from_files(files, api_key=None):
+    """
+    Tar flere opplastede filer og analyserer dem som EN meny.
+
+    `files` er en liste med (file_bytes, filename). Alle bildene slaas
+    sammen og sendes i ETT modellkall, slik at modellen ser hele menyen
+    under ett - viktig naar en fysisk meny er fotografert i flere bilder,
+    saa en rett splittet over to bilder ikke telles dobbelt.
+
+    Strukturert Excel handteres fortsatt direkte (uten modell); lastes
+    flere strukturerte Excel-filer opp, slaas radene sammen.
+    """
+    if not files:
+        return []
+
+    # Ett enkelt strukturert Excel-ark -> direkte lesing, ingen modell.
+    structured_rows = []
+    image_files = []
+    for file_bytes, filename in files:
+        ext = filename.lower().rsplit(".", 1)[-1]
+        if ext in ("xlsx", "xls"):
+            rows = extract_structured_excel(file_bytes)
+            if rows is not None:
+                structured_rows.extend(rows)
+                continue
+        image_files.append((file_bytes, filename))
+
+    # Samle alle bilder fra alle bilde-/PDF-/Word-filer.
+    all_images = []
+    for file_bytes, filename in image_files:
+        all_images.extend(_images_for_file(file_bytes, filename))
+
+    items = []
+    if all_images:
+        items = extract_menu_from_images(all_images, api_key)
+
+    return structured_rows + items
+
+
 def extract_menu_from_images(images, api_key=None):
     """
     Kjorer vision-ekstraksjon paa en liste med (bytes, media_type)-bilder.
