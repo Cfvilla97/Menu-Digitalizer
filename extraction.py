@@ -22,7 +22,7 @@ import os
 import anthropic
 
 MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 8000
+MAX_TOKENS = 16000
 
 # Systemprompt som styrer ekstraksjonen. Reglene speiler MDS-skjemaet
 # og testrapportens funn (sentence case beskrivelser osv.).
@@ -35,11 +35,11 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
   "items": [
     {
       "title": "Produktnavn slik det staar paa menyen",
-      "description": "Fyldig beskrivelse av retten. Avsluttes med punktum.",
+      "description": "Beskrivelse av retten. Avsluttes med punktum.",
       "price": 189.0,
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
       "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng",
-      "allergens": "Egg, Peanotter (typisk for retten - bekreft)"
+      "allergens": "Gluten, Melk, Egg"
     }
   ]
 }
@@ -47,33 +47,35 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
 Viktige regler:
 - IKKE oversett. Behold originalspraaket fra menyen.
 - Pris skal vaere et tall (decimal). Fjern valutasymboler. Finner du ingen pris, sett null.
-- Hvis en rett har flere storrelser/varianter med ulik pris, lag ETT element per variant
-  og bruk "variation"-feltet (f.eks. "Liten", "Stor", "0,5L"). IKKE putt storrelsen i tittelen.
 - Ta med ALLE retter, ogsaa drikke og barnemeny.
 - Hvis samme rett staar to ganger paa menyen, ta den med to ganger (selgeren rydder).
 
+VARIANTER - dette er viktig, MDS bommer ofte her:
+- Hvis en rett tilbys i flere STORRELSER med ulik pris (Liten/Stor, 0,5L/1L),
+  lag ETT element per storrelse. Bruk "variation"-feltet. IKKE i tittelen.
+- Hvis en rett tilbys med ulikt INNHOLD/PROTEIN (f.eks. "ris med kylling
+  eller kjott eller scampi"), lag ETT element per valg. Da blir
+  "variation" f.eks. "Kylling", "Kjott", "Scampi" - hver med sin pris.
+- Kort sagt: hver kombinasjon kunden faktisk kan bestille og betale for
+  skal vaere sin egen rad.
+
 BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
-- Hvis menyen har en beskrivelse: bruk den, men gjor den fyldig og innholdsrik.
-- Hvis menyen mangler beskrivelse: skriv en fyldig beskrivelse basert paa
-  hva retten ER (rettnavnet og kjente kjennetegn ved retten).
-- IKKE dikt opp spesifikke ingredienser som retten ikke har. Hold deg til
-  det retten typisk inneholder.
+- Hvis menyen har en beskrivelse: bruk den.
+- Hvis menyen mangler beskrivelse: skriv en kort, informativ beskrivelse
+  basert paa hva retten ER (rettnavnet og kjente kjennetegn).
+- Hold beskrivelsen kompakt - 1 til 2 setninger. IKKE skriv lange avsnitt.
+- IKKE dikt opp spesifikke ingredienser som retten ikke har.
 - Skriv i sentence case (stor forbokstav forst, ikke title case).
 - Avslutt ALLTID med punktum.
 
-ALLERGENS - estimer forventede allergener for HVER rett:
+ALLERGENS - list forventede allergener for HVER rett:
 - Bruk de 14 EU-allergenene: Gluten, Skalldyr, Egg, Fisk, Peanotter, Soya,
   Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
-- Vurder bade ingredienser nevnt i beskrivelsen OG hva retten typisk
-  inneholder (f.eks. Pad Thai inneholder normalt peanotter, egg og fisk).
-- Format:
-  * Allergen nevnt direkte i menyteksten -> bare navnet: "Egg, Gluten"
-  * Allergen typisk for retten, men ikke eksplisitt nevnt ->
-    "Peanotter (typisk for retten - bekreft)"
-  * Klarer du ikke vurdere (f.eks. ukjent rett, bare et merkenavn) ->
-    "Sjekk med vendor"
-- Skriv ALDRI "Ingen allergener" som en sikker paastand. Er du i tvil,
-  skriv heller "Sjekk med vendor".
+- Ta med bade allergener nevnt i menyteksten OG allergener som er typiske
+  for retten (f.eks. Pad Thai -> Peanotter, Egg, Fisk; pizza -> Gluten, Melk).
+- Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
+- IKKE skriv "antatt", "bekreft", "typisk" eller liknende - bare navnene.
+- Klarer du virkelig ikke vurdere retten, la feltet vaere tom streng.
 """
 
 
@@ -356,7 +358,51 @@ def extract_menu_from_images(images, api_key=None):
 
     try:
         data = json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Klarte ikke tolke modellsvaret som JSON: {e}")
+        return data.get("items", [])
+    except json.JSONDecodeError:
+        # Svaret kan ha blitt avkuttet (naadd token-taket). Forsok aa
+        # redde de komplette elementene i stedet for aa feile helt.
+        salvaged = _salvage_truncated_items(raw)
+        if salvaged:
+            return salvaged
+        raise ValueError(
+            "Modellsvaret kunne ikke tolkes som JSON. Menyen kan vaere "
+            "for stor - prov aa dele den opp i faerre sider per opplasting."
+        )
 
-    return data.get("items", [])
+
+def _salvage_truncated_items(raw):
+    """
+    Redder komplette menyelementer fra et JSON-svar som ble avkuttet.
+
+    Finner alle hele {...}-objekter inne i "items"-lista og parser dem
+    enkeltvis. Et halvt siste objekt forkastes.
+    """
+    import re
+
+    start = raw.find('"items"')
+    if start == -1:
+        return []
+    bracket = raw.find("[", start)
+    if bracket == -1:
+        return []
+
+    items = []
+    depth = 0
+    obj_start = None
+    for i in range(bracket + 1, len(raw)):
+        ch = raw[i]
+        if ch == "{":
+            if depth == 0:
+                obj_start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and obj_start is not None:
+                chunk = raw[obj_start:i + 1]
+                try:
+                    items.append(json.loads(chunk))
+                except json.JSONDecodeError:
+                    pass
+                obj_start = None
+    return items
