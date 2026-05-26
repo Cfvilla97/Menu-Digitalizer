@@ -16,7 +16,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
 from extraction import extract_menu_from_files
-from rules import detect_allergens, to_title_case, to_sentence_case
+from rules import to_title_case, to_sentence_case
 
 # --- MDS-kolonner. Speiler malen fra MDS sitt CSV-output. -------------------
 # Allergens er den nye kolonnen som ikke finnes i standard MDS.
@@ -117,11 +117,8 @@ def items_to_dataframe(items):
         desc = to_sentence_case(str(it.get("description", "")).strip())
         price = it.get("price")
 
-        # Allergener: bruk modellens vurdering (rett-basert). Faller
-        # tilbake paa ordbasert utledning hvis modellfeltet er tomt.
+        # Allergener kommer ferdig vurdert fra modellen, som ren liste.
         allergens = str(it.get("allergens", "")).strip()
-        if not allergens:
-            allergens = detect_allergens(desc)
 
         rows.append({
             "Tittel": title,
@@ -255,13 +252,6 @@ with st.sidebar:
              "MDS-konvensjonen <Vendor>_<GRID>.xlsx.",
     )
 
-    st.divider()
-    st.caption(
-        "Allergener utledes fra ingrediensene i beskrivelsen og er "
-        "alltid merket *antatt \u2013 bekreft*. Selgeren m\u00e5 verifisere "
-        "mot vendoren."
-    )
-
 # API-nokkelen leses fra Streamlit Secrets - aldri vist i UI.
 try:
     api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
@@ -332,15 +322,18 @@ if st.session_state.menu_df is not None:
     st.session_state.menu_df = edited
 
     missing_price = (edited["Pris (NOK)"] == 0).sum()
-    needs_check = edited["Allergener"].str.contains(
-        "Sjekk med vendor", na=False).sum()
+    missing_allergens = (edited["Allergener"].fillna("").str.strip()
+                         == "").sum()
     c1, c2, c3 = st.columns(3)
     c1.metric("Retter", len(edited))
     c2.metric("Mangler pris", int(missing_price))
-    c3.metric("Allergener \u00e5 sjekke", int(needs_check))
+    c3.metric("Mangler allergener", int(missing_allergens))
 
     if missing_price:
         st.warning(f"{missing_price} rett(er) har ingen pris \u2013 "
+                   "fyll inn f\u00f8r eksport.")
+    if missing_allergens:
+        st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
 
     st.divider()
