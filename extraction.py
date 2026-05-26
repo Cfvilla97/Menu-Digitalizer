@@ -63,10 +63,14 @@ VARIANTER - dette er viktig, MDS bommer ofte her:
   skal vaere sin egen rad.
 
 BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
-- Hvis menyen har en beskrivelse: bruk den.
-- Hvis menyen mangler beskrivelse: skriv en kort, informativ beskrivelse
-  basert paa hva retten ER (rettnavnet og kjente kjennetegn).
-- Hold beskrivelsen kompakt - 1 til 2 setninger. IKKE skriv lange avsnitt.
+- Hvis menyen har en beskrivelse: bruk den, men gjor den utfyllende og
+  innholdsrik.
+- Hvis menyen mangler beskrivelse: skriv en utfyllende, innholdsrik
+  beskrivelse basert paa hva retten ER (rettnavnet og kjente kjennetegn).
+  Eksempel: "Sprobunnspizza med tomatsaus, mozzarella, skinke og
+  champignon." eller "Wokrett med fritert kylling, gronnsaker og
+  sotsur saus, servert med ris."
+- Beskriv bunntype, hovedingredienser og tilbehor der det er kjent.
 - IKKE dikt opp spesifikke ingredienser som retten ikke har.
 - Skriv i sentence case (stor forbokstav forst, ikke title case).
 - Avslutt ALLTID med punktum.
@@ -78,7 +82,9 @@ ALLERGENS - list forventede allergener for HVER rett:
   for retten (f.eks. Pad Thai -> Peanotter, Egg, Fisk; pizza -> Gluten, Melk).
 - Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
 - IKKE skriv "antatt", "bekreft", "typisk" eller liknende - bare navnene.
-- Klarer du virkelig ikke vurdere retten, la feltet vaere tom streng.
+- For RENE produkter uten noen av de 14 allergenene (f.eks. brus, vann,
+  juice, sort kaffe, fersk frukt): skriv "Ingen allergener".
+- Klarer du virkelig ikke vurdere produktet, la feltet vaere tom streng.
 """
 
 
