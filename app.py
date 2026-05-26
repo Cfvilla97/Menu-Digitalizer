@@ -19,7 +19,7 @@ from extraction import extract_menu_from_files
 from rules import to_title_case, to_sentence_case
 
 # --- MDS-kolonner. Speiler malen fra MDS sitt CSV-output. -------------------
-# Allergens er den nye kolonnen som ikke finnes i standard MDS.
+# Allergens og Growth_Plus er nye kolonner utenfor standard MDS.
 MDS_COLUMNS = [
     "Title_en_NO", "Title_en_GB", "Title_zh_HK", "Title_en_US",
     "Description_en_NO", "Description_en_GB", "Description_zh_HK",
@@ -28,7 +28,8 @@ MDS_COLUMNS = [
     "Variation_title_en_NO", "Variation_title_en_GB",
     "Variation_title_zh_HK", "Variation_title_en_US",
     "Price", "Remote_Code", "Container_Charge", "Choice_Groups_IDs",
-    "Allergens",  # <-- ny kolonne
+    "Allergens",      # <-- ny kolonne
+    "Growth_Plus",    # <-- ny kolonne: TRUE paa de to Growth+-rettene
 ]
 
 # --- foodora / Delivery Hero fargepalett ------------------------------------
@@ -147,8 +148,14 @@ def build_export_filename(vendor, grid):
     return f"{v}_{g}.xlsx"
 
 
-def build_mds_excel(df, market_lang="NO"):
-    """Bygg en Excel-fil i MDS-formatet fra det redigerte gridet."""
+def build_mds_excel(df, market_lang="NO", growth_plus_indices=None):
+    """
+    Bygg en Excel-fil i MDS-formatet fra det redigerte gridet.
+
+    growth_plus_indices: sett med rad-indekser (fra df) som skal merkes
+    med TRUE i Growth_Plus-kolonnen. None = ingen.
+    """
+    growth_plus_indices = set(growth_plus_indices or [])
     wb = Workbook()
     ws = wb.active
     ws.title = "Draft Menu - MDS"
@@ -167,7 +174,7 @@ def build_mds_excel(df, market_lang="NO"):
     price_col_idx = MDS_COLUMNS.index("Price") + 1
     red_fill = PatternFill("solid", start_color="FFD6D6")
 
-    for _, r in df.iterrows():
+    for idx, r in df.iterrows():
         record = {c: "" for c in MDS_COLUMNS}
         record[title_key] = r["Tittel"]
         record[desc_key] = r["Beskrivelse"]
@@ -177,6 +184,8 @@ def build_mds_excel(df, market_lang="NO"):
         record["Active"] = "TRUE"
         record["Price"] = r["Pris (NOK)"]
         record["Allergens"] = r["Allergener"]
+        if idx in growth_plus_indices:
+            record["Growth_Plus"] = "TRUE"
         ws.append([record[c] for c in MDS_COLUMNS])
 
         # Mangler pris -> marker Price-cella rodt.
@@ -358,6 +367,40 @@ if st.session_state.menu_df is not None:
 
     st.divider()
 
+    # --- Growth+ -------------------------------------------------------------
+    st.subheader("Growth+")
+    sold_growth = st.radio(
+        "Er Growth+ solgt til denne vendoren?",
+        options=["Nei", "Ja"],
+        horizontal=True,
+    )
+
+    growth_indices = []
+    if sold_growth == "Ja":
+        # Bygg valg: "indeks: Tittel (Variant)" saa identiske titler skilles.
+        def _label(idx, row):
+            t = str(row["Tittel"]).strip() or "(uten tittel)"
+            v = str(row["Variant"]).strip()
+            return f"{t} - {v}" if v else t
+
+        option_map = {
+            _label(idx, row): idx for idx, row in edited.iterrows()
+        }
+        picked = st.multiselect(
+            "Velg de 2 rettene som inng\u00e5r i Growth+-kampanjen",
+            options=list(option_map.keys()),
+            max_selections=2,
+        )
+        growth_indices = [option_map[p] for p in picked]
+        if len(picked) != 2:
+            st.info(f"Velg n\u00f8yaktig 2 retter \u2013 valgt n\u00e5: "
+                    f"{len(picked)}.")
+        else:
+            st.success("2 retter valgt \u2013 merkes med TRUE i "
+                       "Growth_Plus-kolonnen.")
+
+    st.divider()
+
     # Anvend prosent-paaslag paa prisene for eksport.
     export_df = edited.copy()
     if price_adjust > 0:
@@ -373,7 +416,8 @@ if st.session_state.menu_df is not None:
     else:
         st.caption(f"Fila lastes ned som: **{export_name}**")
 
-    excel_buf = build_mds_excel(export_df, market_lang=market)
+    excel_buf = build_mds_excel(
+        export_df, market_lang=market, growth_plus_indices=growth_indices)
     st.download_button(
         "\u2b07\ufe0f Last ned MDS-Excel",
         data=excel_buf,
