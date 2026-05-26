@@ -51,8 +51,11 @@ Viktige regler:
 - Hvis samme rett staar to ganger paa menyen, ta den med to ganger (selgeren rydder).
 
 VARIANTER - dette er viktig, MDS bommer ofte her:
-- Hvis en rett tilbys i flere STORRELSER med ulik pris (Liten/Stor, 0,5L/1L),
-  lag ETT element per storrelse. Bruk "variation"-feltet. IKKE i tittelen.
+- Hvis en rett eller drikke tilbys i flere STORRELSER med ulik pris
+  (Liten/Stor, 0,33L/0,5L/1,5L), lag ETT element per storrelse. Bruk
+  "variation"-feltet. IKKE i tittelen. Dette gjelder ogsaa brus:
+  "Coca-Cola 0,5L" og "Coca-Cola 1,5L" blir to elementer med samme
+  tittel "Coca-Cola" og variation "0,5L" / "1,5L".
 - Hvis en rett tilbys med ulikt INNHOLD/PROTEIN (f.eks. "ris med kylling
   eller kjott eller scampi"), lag ETT element per valg. Da blir
   "variation" f.eks. "Kylling", "Kjott", "Scampi" - hver med sin pris.
