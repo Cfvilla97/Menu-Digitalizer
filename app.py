@@ -164,6 +164,9 @@ def build_mds_excel(df, market_lang="NO"):
     desc_key = f"Description_en_{market_lang}"
     var_key = f"Variation_title_en_{market_lang}"
 
+    price_col_idx = MDS_COLUMNS.index("Price") + 1
+    red_fill = PatternFill("solid", start_color="FFD6D6")
+
     for _, r in df.iterrows():
         record = {c: "" for c in MDS_COLUMNS}
         record[title_key] = r["Tittel"]
@@ -175,6 +178,10 @@ def build_mds_excel(df, market_lang="NO"):
         record["Price"] = r["Pris (NOK)"]
         record["Allergens"] = r["Allergener"]
         ws.append([record[c] for c in MDS_COLUMNS])
+
+        # Mangler pris -> marker Price-cella rodt.
+        if not r["Pris (NOK)"] or r["Pris (NOK)"] == 0:
+            ws.cell(row=ws.max_row, column=price_col_idx).fill = red_fill
 
     for col_idx, name in enumerate(MDS_COLUMNS, start=1):
         letter = ws.cell(row=1, column=col_idx).column_letter
@@ -252,6 +259,15 @@ with st.sidebar:
              "MDS-konvensjonen <Vendor>_<GRID>.xlsx.",
     )
 
+    st.divider()
+    st.subheader("Prisjustering")
+    price_adjust = st.number_input(
+        "\u00d8k alle priser med (%)",
+        min_value=0.0, max_value=100.0, value=0.0, step=1.0,
+        help="Noen restauranter \u00f8nsker plattform-priser over sine "
+             "egne. Settes til 0 for ingen justering.",
+    )
+
 # API-nokkelen leses fra Streamlit Secrets - aldri vist i UI.
 try:
     api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
@@ -301,8 +317,8 @@ if analyze_file and uploaded:
 
 if st.session_state.menu_df is not None:
     st.subheader("Rediger menyen")
-    st.caption("Klikk i cellene for \u00e5 rette. Tomme priser vises som 0 \u2013 "
-               "fyll inn riktig verdi.")
+    st.caption("Klikk i cellene for \u00e5 rette. Retter uten pris listes "
+               "under tabellen og er merket r\u00f8dt i eksportfila.")
 
     edited = st.data_editor(
         st.session_state.menu_df,
@@ -321,31 +337,43 @@ if st.session_state.menu_df is not None:
     )
     st.session_state.menu_df = edited
 
-    missing_price = (edited["Pris (NOK)"] == 0).sum()
-    missing_allergens = (edited["Allergener"].fillna("").str.strip()
-                         == "").sum()
+    missing_mask = edited["Pris (NOK)"] == 0
+    missing_price = int(missing_mask.sum())
+    missing_allergens = int((edited["Allergener"].fillna("").str.strip()
+                             == "").sum())
     c1, c2, c3 = st.columns(3)
     c1.metric("Retter", len(edited))
-    c2.metric("Mangler pris", int(missing_price))
-    c3.metric("Mangler allergener", int(missing_allergens))
+    c2.metric("Mangler pris", missing_price)
+    c3.metric("Mangler allergener", missing_allergens)
 
     if missing_price:
-        st.warning(f"{missing_price} rett(er) har ingen pris \u2013 "
-                   "fyll inn f\u00f8r eksport.")
+        manglende = edited.loc[missing_mask, "Tittel"].tolist()
+        liste = ", ".join(str(t) for t in manglende if str(t).strip())
+        st.error(f"\u26a0\ufe0f {missing_price} rett(er) mangler pris og er "
+                 f"merket r\u00f8dt i eksportfila: {liste}. "
+                 "Fyll inn riktig pris f\u00f8r du laster opp menyen.")
     if missing_allergens:
         st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
 
     st.divider()
 
+    # Anvend prosent-paaslag paa prisene for eksport.
+    export_df = edited.copy()
+    if price_adjust > 0:
+        factor = 1.0 + price_adjust / 100.0
+        export_df["Pris (NOK)"] = (export_df["Pris (NOK)"] * factor).round(0)
+        st.caption(f"Prisene er justert opp {price_adjust:.0f} % i "
+                   "eksportfila.")
+
     export_name = build_export_filename(vendor_name, grid_id)
     if not vendor_name or not grid_id:
         st.info(f"Fyll inn vendornavn og GRID-id i sidepanelet for "
-                f"riktig filnavn. Nåværende: **{export_name}**")
+                f"riktig filnavn. N\u00e5v\u00e6rende: **{export_name}**")
     else:
         st.caption(f"Fila lastes ned som: **{export_name}**")
 
-    excel_buf = build_mds_excel(edited, market_lang=market)
+    excel_buf = build_mds_excel(export_df, market_lang=market)
     st.download_button(
         "\u2b07\ufe0f Last ned MDS-Excel",
         data=excel_buf,
