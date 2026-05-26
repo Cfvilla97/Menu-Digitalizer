@@ -56,6 +56,11 @@ VARIANTER - dette er viktig, MDS bommer ofte her:
   "variation"-feltet. IKKE i tittelen. Dette gjelder ogsaa brus:
   "Coca-Cola 0,5L" og "Coca-Cola 1,5L" blir to elementer med samme
   tittel "Coca-Cola" og variation "0,5L" / "1,5L".
+- For DRIKKE skal "variation" KUN vaere storrelsen (f.eks. "0,5L").
+  IKKE ta med emballasje. Ord som "flaske", "boks", "PET", "i boks",
+  "paa flaske" skal IKKE staa i variation og IKKE bli egne elementer.
+  Eksempel: "Appelsinsmakende Fanta, 0,5L flaske eller boks" ->
+  ETT element, variation "0,5L".
 - Hvis en rett tilbys med ulikt INNHOLD/PROTEIN (f.eks. "ris med kylling
   eller kjott eller scampi"), lag ETT element per valg. Da blir
   "variation" f.eks. "Kylling", "Kjott", "Scampi" - hver med sin pris.
