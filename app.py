@@ -365,6 +365,17 @@ if st.session_state.menu_df is not None:
         st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
 
+    # --- Forhaandsvisning av prisjustering -----------------------------------
+    if price_adjust > 0:
+        factor = 1.0 + price_adjust / 100.0
+        preview = edited[["Tittel", "Variant", "Pris (NOK)"]].copy()
+        preview = preview.rename(columns={"Pris (NOK)": "Pris f\u00f8r"})
+        preview[f"Pris etter +{price_adjust:.0f}%"] = (
+            (edited["Pris (NOK)"] * factor).round(0))
+        st.markdown(f"**Prisjustering: +{price_adjust:.0f}%** \u2013 "
+                    "slik blir prisene i eksportfila:")
+        st.dataframe(preview, use_container_width=True, hide_index=True)
+
     st.divider()
 
     # --- Growth+ -------------------------------------------------------------
@@ -406,8 +417,6 @@ if st.session_state.menu_df is not None:
     if price_adjust > 0:
         factor = 1.0 + price_adjust / 100.0
         export_df["Pris (NOK)"] = (export_df["Pris (NOK)"] * factor).round(0)
-        st.caption(f"Prisene er justert opp {price_adjust:.0f} % i "
-                   "eksportfila.")
 
     export_name = build_export_filename(vendor_name, grid_id)
     if not vendor_name or not grid_id:
