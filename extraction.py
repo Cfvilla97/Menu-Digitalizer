@@ -64,6 +64,14 @@ VARIANTER - dette er viktig, MDS bommer ofte her:
 - Hvis en rett tilbys med ulikt INNHOLD/PROTEIN (f.eks. "ris med kylling
   eller kjott eller scampi"), lag ETT element per valg. Da blir
   "variation" f.eks. "Kylling", "Kjott", "Scampi" - hver med sin pris.
+- "VELG STORRELSE" i beskrivelsen - handter slik:
+  * Hvis beskrivelsen oppgir konkrete storrelser ("velg storrelse 100g
+    eller 160g"): lag ETT element per storrelse, sett "variation" til
+    "100g" / "160g", og FJERN "velg storrelse ..."-teksten fra
+    "description" paa begge. Resten av beskrivelsen beholdes uendret.
+  * Hvis beskrivelsen bare sier "velg storrelse" UTEN konkrete
+    storrelser: lag bare ETT element, FJERN "velg storrelse"-teksten
+    fra "description", og la "variation" vaere tom streng.
 - Kort sagt: hver kombinasjon kunden faktisk kan bestille og betale for
   skal vaere sin egen rad.
 
