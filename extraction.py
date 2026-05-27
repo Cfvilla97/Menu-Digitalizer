@@ -85,6 +85,10 @@ BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
   sotsur saus, servert med ris."
 - Beskriv bunntype, hovedingredienser og tilbehor der det er kjent.
 - IKKE dikt opp spesifikke ingredienser som retten ikke har.
+- Beskrivelsen skal vaere REN tekst. Mange menyer skriver allergener
+  inline som bokstavkoder, f.eks. "Pizza med skinke (G, M)" eller
+  "Pasta G,M,E". FJERN slike koder fra "description" - de skal ikke
+  staa i beskrivelsen. Tolk dem i stedet til allergener (se under).
 - Skriv i sentence case (stor forbokstav forst, ikke title case).
 - Avslutt ALLTID med punktum.
 
@@ -93,6 +97,11 @@ ALLERGENS - list forventede allergener for HVER rett:
   Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
 - Ta med bade allergener nevnt i menyteksten OG allergener som er typiske
   for retten (f.eks. Pad Thai -> Peanotter, Egg, Fisk; pizza -> Gluten, Melk).
+- BOKSTAVKODER: hvis menyen markerer allergener med koder (G, M, E osv.),
+  tolk dem til allergennavn. Bruk menyens egen tegnforklaring hvis den
+  finnes. Vanlige norske koder: G=Gluten, M=Melk, E=Egg, N=Notter,
+  F=Fisk, Sk=Skalldyr. Er en kode tvetydig og menyen ikke forklarer
+  den, hopp over den koden i stedet for aa gjette.
 - Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
 - IKKE skriv "antatt", "bekreft", "typisk" eller liknende - bare navnene.
 - For RENE produkter uten noen av de 14 allergenene (f.eks. brus, vann,
