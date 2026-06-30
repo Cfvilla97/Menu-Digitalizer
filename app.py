@@ -35,9 +35,26 @@ MDS_COLUMNS = [
 # --- foodora / Delivery Hero fargepalett ------------------------------------
 FOODORA_PINK = "#FF1F62"
 FOODORA_PINK_DARK = "#D81B54"
-INK = "#1A1A2E"
-SOFT_BG = "#FFF5F8"
-BORDER = "#FFD6E2"
+
+# Lys/morkt tema-paletter. Selgeren bytter via knapp i sidepanelet.
+THEMES = {
+    "light": {
+        "app_bg":      "#FFFFFF",
+        "ink":         "#1A1A2E",
+        "soft_bg":     "#FFF5F8",
+        "border":      "#FFD6E2",
+        "logo_bg":     "#FFFFFF",
+        "card_text":   "#1A1A2E",
+    },
+    "dark": {
+        "app_bg":      "#15171F",
+        "ink":         "#F5F5F7",
+        "soft_bg":     "#1F2230",
+        "border":      "#3A2E3A",
+        "logo_bg":     "#FFFFFF",
+        "card_text":   "#F5F5F7",
+    },
+}
 
 # Marked -> sprakkode. Kun NO aktivt naa; lett aa utvide senere.
 MARKETS = {
@@ -49,11 +66,17 @@ MARKETS = {
 st.set_page_config(page_title="Menu Digitalizer - foodora",
                    page_icon="\U0001F37D", layout="wide")
 
-# --- Stil: gjor appen foodora-rosa i stedet for grastandard -----------------
+# Sett standardtema (lyst) ved forste lasting.
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+T = THEMES[st.session_state.theme]
+
+# --- Stil: foodora-tema, byttbart mellom lyst og morkt ----------------------
 st.markdown(f"""
 <style>
-  .stApp {{ background-color: #FFFFFF; }}
-  h1, h2, h3 {{ color: {INK}; }}
+  .stApp {{ background-color: {T['app_bg']}; color: {T['ink']}; }}
+  h1, h2, h3, p, label, span {{ color: {T['ink']}; }}
   /* primaerknapper */
   .stButton > button[kind="primary"],
   .stDownloadButton > button {{
@@ -70,15 +93,16 @@ st.markdown(f"""
   }}
   /* sidebar */
   section[data-testid="stSidebar"] {{
-      background-color: {SOFT_BG};
-      border-right: 1px solid {BORDER};
+      background-color: {T['soft_bg']};
+      border-right: 1px solid {T['border']};
   }}
   /* metrikk-kort */
   div[data-testid="stMetric"] {{
-      background-color: {SOFT_BG};
-      border: 1px solid {BORDER};
+      background-color: {T['soft_bg']};
+      border: 1px solid {T['border']};
       border-radius: 10px;
       padding: 12px 16px;
+      color: {T['card_text']};
   }}
   /* topp-banner */
   .md-banner {{
@@ -94,7 +118,7 @@ st.markdown(f"""
   .md-banner h1 {{ color: #FFFFFF; margin: 0; font-size: 30px; }}
   .md-banner p  {{ color: #FFE3EC; margin: 6px 0 0 0; font-size: 15px; }}
   .md-logo {{
-      background: #FFFFFF;
+      background: {T['logo_bg']};
       border-radius: 12px;
       padding: 14px 18px;
       flex-shrink: 0;
@@ -244,6 +268,19 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
+    # --- Tema-bytter ---------------------------------------------------------
+    is_dark = st.session_state.theme == "dark"
+    label = "\u2600\ufe0f Lyst tema" if is_dark else "\U0001F319 M\u00f8rkt tema"
+    if st.button(label, use_container_width=True, key="theme_toggle"):
+        st.session_state.theme = "light" if is_dark else "dark"
+        st.rerun()
+    st.caption(
+        "Vil du at temaet skal f\u00f8lge nettleseren automatisk? "
+        "Trykk \u2630-menyen \u00f8verst til h\u00f8yre \u2192 Settings \u2192 "
+        "sett Theme til Auto."
+    )
+
+    st.divider()
     st.header("Innstillinger")
 
     market_name = st.selectbox(
@@ -270,12 +307,25 @@ with st.sidebar:
 
     st.divider()
     st.subheader("Prisjustering")
-    price_adjust = st.number_input(
-        "\u00d8k alle priser med (%)",
-        min_value=0.0, max_value=100.0, value=0.0, step=1.0,
-        help="Noen restauranter \u00f8nsker plattform-priser over sine "
-             "egne. Settes til 0 for ingen justering.",
+    adjust_mode = st.radio(
+        "Type",
+        options=["Ingen", "Prosent (%)", "Kroner (NOK)"],
+        horizontal=False,
+        help="Velg om alle priser skal \u00f8kes med en prosent eller "
+             "et fast kronebel\u00f8p.",
     )
+    price_pct = 0.0
+    price_kr = 0.0
+    if adjust_mode == "Prosent (%)":
+        price_pct = st.number_input(
+            "\u00d8k alle priser med (%)",
+            min_value=0.0, max_value=100.0, value=0.0, step=1.0,
+        )
+    elif adjust_mode == "Kroner (NOK)":
+        price_kr = st.number_input(
+            "\u00d8k alle priser med (NOK)",
+            min_value=0.0, max_value=500.0, value=0.0, step=1.0,
+        )
 
 # API-nokkelen leses fra Streamlit Secrets - aldri vist i UI.
 try:
@@ -326,25 +376,33 @@ if analyze_file and uploaded:
 
 if st.session_state.menu_df is not None:
     st.subheader("Rediger menyen")
-    st.caption("Klikk i cellene for \u00e5 rette. Retter uten pris listes "
-               "under tabellen og er merket r\u00f8dt i eksportfila.")
+    st.caption("Klikk i cellene for \u00e5 rette. Endringer lagres f\u00f8rst "
+               "n\u00e5r du trykker **Lagre endringer** \u2013 da slipper du "
+               "at siden oppdaterer seg etter hver lille rettelse.")
 
-    edited = st.data_editor(
-        st.session_state.menu_df,
-        use_container_width=True,
-        num_rows="dynamic",
-        column_config={
-            "Tittel": st.column_config.TextColumn(width="medium"),
-            "Beskrivelse": st.column_config.TextColumn(width="large"),
-            "Variant": st.column_config.TextColumn(width="small"),
-            "Pris (NOK)": st.column_config.NumberColumn(
-                format="%.0f", min_value=0),
-            "Kategori": st.column_config.TextColumn(width="small"),
-            "Allergener": st.column_config.TextColumn(width="medium"),
-        },
-        key="editor",
-    )
-    st.session_state.menu_df = edited
+    with st.form("editor_form", clear_on_submit=False):
+        edited_form = st.data_editor(
+            st.session_state.menu_df,
+            use_container_width=True,
+            num_rows="dynamic",
+            column_config={
+                "Tittel": st.column_config.TextColumn(width="medium"),
+                "Beskrivelse": st.column_config.TextColumn(width="large"),
+                "Variant": st.column_config.TextColumn(width="small"),
+                "Pris (NOK)": st.column_config.NumberColumn(
+                    format="%.0f", min_value=0),
+                "Kategori": st.column_config.TextColumn(width="small"),
+                "Allergener": st.column_config.TextColumn(width="medium"),
+            },
+            key="editor",
+        )
+        saved = st.form_submit_button("\U0001F4BE Lagre endringer",
+                                      type="primary")
+        if saved:
+            st.session_state.menu_df = edited_form
+
+    # Det vi viser videre er den sist lagrede versjonen.
+    edited = st.session_state.menu_df
 
     missing_mask = edited["Pris (NOK)"] == 0
     missing_price = int(missing_mask.sum())
@@ -366,13 +424,25 @@ if st.session_state.menu_df is not None:
                    "fyll inn f\u00f8r eksport.")
 
     # --- Forhaandsvisning av prisjustering -----------------------------------
-    if price_adjust > 0:
-        factor = 1.0 + price_adjust / 100.0
+    def _apply_adjustment(prices):
+        """Returner justert prisserie basert paa valgt modus."""
+        if price_pct > 0:
+            return (prices * (1.0 + price_pct / 100.0)).round(0)
+        if price_kr > 0:
+            # Bare priser stoerre enn 0 justeres - vi vil ikke gi en
+            # manglende-pris-rad et tilfeldig tall.
+            return prices.where(prices == 0, prices + price_kr).round(0)
+        return prices
+
+    adjustment_active = price_pct > 0 or price_kr > 0
+    if adjustment_active:
+        adj_label = (f"+{price_pct:.0f}%" if price_pct > 0
+                     else f"+{price_kr:.0f} kr")
         preview = edited[["Tittel", "Variant", "Pris (NOK)"]].copy()
         preview = preview.rename(columns={"Pris (NOK)": "Pris f\u00f8r"})
-        preview[f"Pris etter +{price_adjust:.0f}%"] = (
-            (edited["Pris (NOK)"] * factor).round(0))
-        st.markdown(f"**Prisjustering: +{price_adjust:.0f}%** \u2013 "
+        preview[f"Pris etter {adj_label}"] = _apply_adjustment(
+            edited["Pris (NOK)"])
+        st.markdown(f"**Prisjustering: {adj_label}** \u2013 "
                     "slik blir prisene i eksportfila:")
         st.dataframe(preview, use_container_width=True, hide_index=True)
 
@@ -414,9 +484,8 @@ if st.session_state.menu_df is not None:
 
     # Anvend prosent-paaslag paa prisene for eksport.
     export_df = edited.copy()
-    if price_adjust > 0:
-        factor = 1.0 + price_adjust / 100.0
-        export_df["Pris (NOK)"] = (export_df["Pris (NOK)"] * factor).round(0)
+    if adjustment_active:
+        export_df["Pris (NOK)"] = _apply_adjustment(export_df["Pris (NOK)"])
 
     export_name = build_export_filename(vendor_name, grid_id)
     if not vendor_name or not grid_id:
