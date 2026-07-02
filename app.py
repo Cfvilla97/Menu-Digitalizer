@@ -41,16 +41,26 @@ THEMES = {
     "light": {
         "app_bg":      "#FFFFFF",
         "ink":         "#1A1A2E",
+        "muted":       "#666874",
         "soft_bg":     "#FFF5F8",
         "border":      "#FFD6E2",
+        "input_bg":    "#FFFFFF",
+        "input_text":  "#1A1A2E",
+        "header_bg":   "#FFFFFF",
+        "header_text": "#FFFFFF",  # st.header er hvit boks i lys mode
         "logo_bg":     "#FFFFFF",
         "card_text":   "#1A1A2E",
     },
     "dark": {
         "app_bg":      "#15171F",
         "ink":         "#F5F5F7",
-        "soft_bg":     "#1F2230",
-        "border":      "#3A2E3A",
+        "muted":       "#A8AAB8",
+        "soft_bg":     "#23263A",
+        "border":      "#3D4055",
+        "input_bg":    "#2A2E40",
+        "input_text":  "#F5F5F7",
+        "header_bg":   "#15171F",
+        "header_text": "#FFFFFF",
         "logo_bg":     "#FFFFFF",
         "card_text":   "#F5F5F7",
     },
@@ -71,40 +81,128 @@ if "theme" not in st.session_state:
     st.session_state.theme = "light"
 
 T = THEMES[st.session_state.theme]
+DARK = st.session_state.theme == "dark"
 
 # --- Stil: foodora-tema, byttbart mellom lyst og morkt ----------------------
 st.markdown(f"""
 <style>
+  /* Grunnlag */
   .stApp {{ background-color: {T['app_bg']}; color: {T['ink']}; }}
-  h1, h2, h3, p, label, span {{ color: {T['ink']}; }}
-  /* primaerknapper */
+
+  /* Tekst: alle vanlige tekstelementer respekterer tema */
+  .stApp, .stApp p, .stApp label, .stApp span, .stApp li,
+  .stApp div[data-testid="stMarkdownContainer"],
+  .stApp div[data-testid="stMarkdownContainer"] * {{
+      color: {T['ink']};
+  }}
+  /* Overskrifter MAA staa ut, ogsaa st.subheader */
+  .stApp h1, .stApp h2, .stApp h3,
+  section[data-testid="stSidebar"] h1,
+  section[data-testid="stSidebar"] h2,
+  section[data-testid="stSidebar"] h3 {{
+      color: {T['ink']} !important;
+      font-weight: 700;
+  }}
+  /* Caption / hjelpetekst - tonet ned, men lesbar */
+  .stApp small, .stApp [data-testid="stCaptionContainer"] {{
+      color: {T['muted']} !important;
+  }}
+
+  /* Sidebar */
+  section[data-testid="stSidebar"] {{
+      background-color: {T['soft_bg']};
+      border-right: 1px solid {T['border']};
+  }}
+  section[data-testid="stSidebar"] * {{
+      color: {T['ink']};
+  }}
+
+  /* Primaerknapper */
   .stButton > button[kind="primary"],
-  .stDownloadButton > button {{
+  .stDownloadButton > button,
+  .stFormSubmitButton > button {{
       background-color: {FOODORA_PINK};
-      color: #FFFFFF;
+      color: #FFFFFF !important;
       border: none;
       border-radius: 8px;
       font-weight: 600;
   }}
   .stButton > button[kind="primary"]:hover,
-  .stDownloadButton > button:hover {{
+  .stDownloadButton > button:hover,
+  .stFormSubmitButton > button:hover {{
       background-color: {FOODORA_PINK_DARK};
-      color: #FFFFFF;
+      color: #FFFFFF !important;
   }}
-  /* sidebar */
-  section[data-testid="stSidebar"] {{
-      background-color: {T['soft_bg']};
-      border-right: 1px solid {T['border']};
+  /* Sekundaerknapper (inkl. tema-toggle) */
+  .stButton > button:not([kind="primary"]) {{
+      background-color: {T['input_bg']};
+      color: {T['ink']};
+      border: 1px solid {T['border']};
   }}
-  /* metrikk-kort */
+
+  /* Tekst- og tallinput, selectbox, radio, multiselect */
+  .stTextInput input, .stNumberInput input, .stTextArea textarea {{
+      background-color: {T['input_bg']} !important;
+      color: {T['input_text']} !important;
+      border: 1px solid {T['border']} !important;
+  }}
+  div[data-baseweb="select"] > div,
+  div[data-baseweb="input"] > div,
+  div[data-baseweb="textarea"] > div {{
+      background-color: {T['input_bg']} !important;
+      color: {T['input_text']} !important;
+      border-color: {T['border']} !important;
+  }}
+  div[data-baseweb="select"] * {{ color: {T['input_text']} !important; }}
+  /* Selectbox/Multiselect dropdown-meny */
+  div[data-baseweb="popover"] li,
+  div[data-baseweb="popover"] div {{
+      background-color: {T['input_bg']} !important;
+      color: {T['input_text']} !important;
+  }}
+  div[data-baseweb="popover"] li:hover {{
+      background-color: {T['soft_bg']} !important;
+  }}
+  /* Radio-tekst */
+  .stRadio label, .stRadio span {{ color: {T['ink']} !important; }}
+
+  /* Filopplaster */
+  section[data-testid="stFileUploaderDropzone"] {{
+      background-color: {T['soft_bg']} !important;
+      border: 1px dashed {T['border']} !important;
+  }}
+  section[data-testid="stFileUploaderDropzone"] * {{
+      color: {T['ink']} !important;
+  }}
+
+  /* Metrikk-kort */
   div[data-testid="stMetric"] {{
       background-color: {T['soft_bg']};
       border: 1px solid {T['border']};
       border-radius: 10px;
       padding: 12px 16px;
-      color: {T['card_text']};
   }}
-  /* topp-banner */
+  div[data-testid="stMetric"] * {{ color: {T['card_text']} !important; }}
+
+  /* Tabeller (st.dataframe og data_editor) */
+  .stDataFrame, [data-testid="stDataFrame"] {{
+      background-color: {T['input_bg']} !important;
+  }}
+
+  /* Info/warning/error-bokser i dark mode trenger tilpasning */
+  {"""
+  div[data-testid="stAlertContainer"] {
+      background-color: #2A2E40 !important;
+  }
+  div[data-testid="stAlertContainer"] * {
+      color: #F5F5F7 !important;
+  }
+  """ if DARK else ""}
+
+  /* Skille-linjer */
+  hr {{ border-color: {T['border']} !important; }}
+
+  /* Topp-banner */
   .md-banner {{
       background: linear-gradient(135deg, {FOODORA_PINK} 0%, {FOODORA_PINK_DARK} 100%);
       color: #FFFFFF;
@@ -115,8 +213,8 @@ st.markdown(f"""
       align-items: center;
       gap: 22px;
   }}
-  .md-banner h1 {{ color: #FFFFFF; margin: 0; font-size: 30px; }}
-  .md-banner p  {{ color: #FFE3EC; margin: 6px 0 0 0; font-size: 15px; }}
+  .md-banner h1 {{ color: #FFFFFF !important; margin: 0; font-size: 30px; }}
+  .md-banner p  {{ color: #FFE3EC !important; margin: 6px 0 0 0; font-size: 15px; }}
   .md-logo {{
       background: {T['logo_bg']};
       border-radius: 12px;
