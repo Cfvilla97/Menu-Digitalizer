@@ -39,7 +39,9 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
       "price": 189.0,
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
       "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng",
-      "allergens": "Gluten, Melk, Egg"
+      "allergens": "Gluten, Melk, Egg",
+      "add_ons": "Ekstra: Ost +20 kr, Bacon +25 kr; Drikke: Cola, Sprite, Fanta",
+      "unclear": "Tilbehor ikke spesifisert"
     }
   ]
 }
@@ -59,54 +61,80 @@ VARIANTER - dette er viktig, MDS bommer ofte her:
 - For DRIKKE skal "variation" KUN vaere storrelsen (f.eks. "0,5L").
   IKKE ta med emballasje. Ord som "flaske", "boks", "PET", "i boks",
   "paa flaske" skal IKKE staa i variation og IKKE bli egne elementer.
-  Eksempel: "Appelsinsmakende Fanta, 0,5L flaske eller boks" ->
-  ETT element, variation "0,5L".
 - Hvis en rett tilbys med ulikt INNHOLD/PROTEIN (f.eks. "ris med kylling
   eller kjott eller scampi"), lag ETT element per valg. Da blir
   "variation" f.eks. "Kylling", "Kjott", "Scampi" - hver med sin pris.
 - "VELG STORRELSE" i beskrivelsen - handter slik:
-  * Hvis beskrivelsen oppgir konkrete storrelser ("velg storrelse 100g
-    eller 160g"): lag ETT element per storrelse, sett "variation" til
-    "100g" / "160g", og FJERN "velg storrelse ..."-teksten fra
-    "description" paa begge. Resten av beskrivelsen beholdes uendret.
-  * Hvis beskrivelsen bare sier "velg storrelse" UTEN konkrete
-    storrelser: lag bare ETT element, FJERN "velg storrelse"-teksten
-    fra "description", og la "variation" vaere tom streng.
+  * Konkrete storrelser oppgitt: lag ETT element per storrelse, sett
+    "variation", og FJERN "velg storrelse ..."-teksten fra "description".
+  * Bare "velg storrelse" uten konkrete tall: lag ETT element, FJERN
+    teksten fra "description", "variation" som tom streng.
 - Kort sagt: hver kombinasjon kunden faktisk kan bestille og betale for
   skal vaere sin egen rad.
 
 BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
 - Hvis menyen har en beskrivelse: bruk den, men gjor den utfyllende og
   innholdsrik.
-- Hvis menyen mangler beskrivelse: skriv en utfyllende, innholdsrik
-  beskrivelse basert paa hva retten ER (rettnavnet og kjente kjennetegn).
-  Eksempel: "Sprobunnspizza med tomatsaus, mozzarella, skinke og
-  champignon." eller "Wokrett med fritert kylling, gronnsaker og
-  sotsur saus, servert med ris."
-- Beskriv bunntype, hovedingredienser og tilbehor der det er kjent.
+- Hvis menyen mangler beskrivelse: skriv en utfyllende beskrivelse basert
+  paa hva retten ER. Eksempel: "Sprobunnspizza med tomatsaus, mozzarella,
+  skinke og champignon."
 - IKKE dikt opp spesifikke ingredienser som retten ikke har.
-- Beskrivelsen skal vaere REN tekst. Mange menyer skriver allergener
-  inline som bokstavkoder, f.eks. "Pizza med skinke (G, M)" eller
-  "Pasta G,M,E". FJERN slike koder fra "description" - de skal ikke
-  staa i beskrivelsen. Tolk dem i stedet til allergener (se under).
-- Skriv i sentence case (stor forbokstav forst, ikke title case).
-- Avslutt ALLTID med punktum.
+- Beskrivelsen skal vaere REN tekst. FJERN allergen-bokstavkoder som
+  "(G, M)" eller "G,M,E" fra beskrivelsen - de tolkes i allergens-feltet.
+- FJERN OGSAA tilleggsvalg fra beskrivelsen - de skal i "add_ons"-feltet.
+  Eksempel: menyen sier "Burger med saus, salat. Legg til ost +20, bacon
+  +25." -> description = "Burger med saus og salat.", add_ons = "Ekstra:
+  Ost +20 kr, Bacon +25 kr".
+- Skriv i sentence case. Avslutt ALLTID med punktum.
 
 ALLERGENS - list forventede allergener for HVER rett:
 - Bruk de 14 EU-allergenene: Gluten, Skalldyr, Egg, Fisk, Peanotter, Soya,
   Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
-- Ta med bade allergener nevnt i menyteksten OG allergener som er typiske
-  for retten (f.eks. Pad Thai -> Peanotter, Egg, Fisk; pizza -> Gluten, Melk).
-- BOKSTAVKODER: hvis menyen markerer allergener med koder (G, M, E osv.),
-  tolk dem til allergennavn. Bruk menyens egen tegnforklaring hvis den
-  finnes. Vanlige norske koder: G=Gluten, M=Melk, E=Egg, N=Notter,
-  F=Fisk, Sk=Skalldyr. Er en kode tvetydig og menyen ikke forklarer
-  den, hopp over den koden i stedet for aa gjette.
+
+- REGEL 1 (VIKTIGST): Hvis menyen eksplisitt oppgir at retten inneholder
+  en allergen - enten som ord ("inneholder gluten", "med melk") eller som
+  bokstavkode ("(G, M)") eller ikon - MAA den allergenen ALLTID med i
+  "allergens". IKKE fjern den. IKKE gjett at den er feil. Det som staar
+  paa menyen er fasit og skal med, uten unntak.
+
+- REGEL 2: I tillegg til det menyen sier, ta med allergener som er
+  typiske for retten:
+  * Pizza -> Gluten, Melk
+  * Pad Thai -> Peanotter, Egg, Fisk
+  * Kimchi -> Fisk (koreansk kimchi inneholder som regel fiskesaus)
+  * Bibimbap, kimbap -> Egg, Fisk, Sesam
+  * Sushi, nigiri, maki -> Fisk, Soya, Sesam (og Skalldyr for rekesushi)
+  * Burger -> Gluten, Melk (brod og ost)
+  * Kebab -> Gluten (brod), evt. Melk hvis saus
+  * Wok med soyasaus -> Gluten (soyasaus har hvete), Soya
+  * Tikka masala, curry -> Melk (flote/yoghurt)
+
+- REGEL 3: Ved tvil, TA MED. Det er tryggere aa liste en allergen for
+  mye enn en for lite. En kunde med allergi kan bli syk hvis vi
+  underrapporterer - overrapportering er bare litt overforsiktig.
+
+- BOKSTAVKODER: G=Gluten, M=Melk, E=Egg, N=Notter, F=Fisk, Sk=Skalldyr.
+  Bruk menyens egen tegnforklaring hvis den finnes.
 - Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
-- IKKE skriv "antatt", "bekreft", "typisk" eller liknende - bare navnene.
-- For RENE produkter uten noen av de 14 allergenene (f.eks. brus, vann,
-  juice, sort kaffe, fersk frukt): skriv "Ingen allergener".
-- Klarer du virkelig ikke vurdere produktet, la feltet vaere tom streng.
+- IKKE skriv "antatt", "bekreft", "typisk" - bare navnene.
+- For RENE produkter uten noen av de 14 (brus, vann, juice, sort kaffe,
+  fersk frukt): skriv "Ingen allergener".
+
+ADD_ONS - tilleggsvalg og valgfrie ekstra som staar paa menyen:
+- Format: "Kategori: valg1, valg2, ...; Kategori2: ...".
+  Eksempler: "Ekstra: Ost +20 kr, Bacon +25 kr" eller "Drikke: Cola,
+  Sprite, Fanta" eller "Saus: Bearnaise, Peppersaus, Rodvinssaus".
+- Ta bare med tilleggsvalg som ER paa menyen, ikke dikt opp.
+- Tom streng hvis menyen ikke oppgir noen tilleggsvalg for denne retten.
+
+UNCLEAR - fraser som ikke er tydelige nok:
+- Hvis retten sier ting som "med tilbehor", "med saus", "med garnityr"
+  UTEN aa spesifisere hva tilbehoret/sausen/garnityret er, skriv en
+  kort beskrivelse i "unclear"-feltet. Eksempler: "Tilbehor ikke
+  spesifisert", "Sausen er ikke definert".
+- FJERN samtidig den uklare frasen fra "description". Selgeren maa
+  avklare med vendoren for menyen kan publiseres.
+- Tom streng hvis alt er tydelig.
 """
 
 
