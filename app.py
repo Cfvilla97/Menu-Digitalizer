@@ -19,17 +19,18 @@ from extraction import extract_menu_from_files
 from rules import to_title_case, to_sentence_case
 
 # --- MDS-kolonner. Speiler malen fra MDS sitt CSV-output. -------------------
-# Allergens og Growth_Plus er nye kolonner utenfor standard MDS.
-MDS_COLUMNS = [
-    "Title_en_NO", "Title_en_GB", "Title_zh_HK", "Title_en_US",
-    "Description_en_NO", "Description_en_GB", "Description_zh_HK",
-    "Description_en_US", "Description_type", "Category_ID",
-    "Pre - packed", "Active", "Image_URL", "VAT_ID",
-    "Variation_title_en_NO", "Variation_title_en_GB",
-    "Variation_title_zh_HK", "Variation_title_en_US",
-    "Price", "Remote_Code", "Container_Charge", "Choice_Groups_IDs",
-    "Allergens",      # <-- ny kolonne
-    "Growth_Plus",    # <-- ny kolonne: TRUE paa de to Growth+-rettene
+# Menneskevennlig eksport-format - agenten leser dette manuelt inn i MDS.
+# Rekkefolge og navn er valgt for lesbarhet, ikke MDS-kolonnesamsvar.
+EXPORT_COLUMNS = [
+    "Kategori",
+    "Tittel",
+    "Variant",
+    "Beskrivelse",
+    "Pris (NOK)",
+    "Allergener",
+    "Tilleggsvalg",
+    "Growth+",
+    "Uklarheter",
 ]
 
 # --- foodora / Delivery Hero fargepalett ------------------------------------
@@ -243,18 +244,25 @@ def items_to_dataframe(items):
         # Allergener kommer ferdig vurdert fra modellen, som ren liste.
         allergens = str(it.get("allergens", "")).strip()
 
+        # Tilleggsvalg: fritekst-sammendrag som modellen bygger fra menyen.
+        add_ons = str(it.get("add_ons", "")).strip()
+
+        # Uklarheter: hvis modellen fant noe udefinert (f.eks. "med saus"
+        # uten aa spesifisere hva), listes det her for selgeren.
+        unclear = str(it.get("unclear", "")).strip()
+
         rows.append({
-            "Tittel": title,
-            "Beskrivelse": desc,
-            "Variant": str(it.get("variation", "")).strip(),
-            "Pris (NOK)": price if price is not None else 0.0,
             "Kategori": str(it.get("category", "")).strip(),
+            "Tittel": title,
+            "Variant": str(it.get("variation", "")).strip(),
+            "Beskrivelse": desc,
+            "Pris (NOK)": price if price is not None else 0.0,
             "Allergener": allergens,
+            "Tilleggsvalg": add_ons,
+            "Growth+": "",  # settes senere naar selger velger Growth+-retter
+            "Uklarheter": unclear,
         })
-    return pd.DataFrame(rows, columns=[
-        "Tittel", "Beskrivelse", "Variant", "Pris (NOK)",
-        "Kategori", "Allergener",
-    ])
+    return pd.DataFrame(rows, columns=EXPORT_COLUMNS)
 
 
 def safe_filename_part(text):
@@ -270,58 +278,55 @@ def build_export_filename(vendor, grid):
     return f"{v}_{g}.xlsx"
 
 
-def build_mds_excel(df, market_lang="NO", growth_plus_indices=None):
+def build_export_excel(df):
     """
-    Bygg en Excel-fil i MDS-formatet fra det redigerte gridet.
+    Bygg Excel-fila i den menneskevennlige eksportstrukturen.
 
-    growth_plus_indices: sett med rad-indekser (fra df) som skal merkes
-    med TRUE i Growth_Plus-kolonnen. None = ingen.
+    Fila leses manuelt av en agent som legger menyen inn i MDS,
+    saa strukturen er valgt for lesbarhet, ikke MDS-kolonnesamsvar.
     """
-    growth_plus_indices = set(growth_plus_indices or [])
     wb = Workbook()
     ws = wb.active
-    ws.title = "Draft Menu - MDS"
+    ws.title = "Meny"
 
-    ws.append(MDS_COLUMNS)
+    ws.append(EXPORT_COLUMNS)
     header_fill = PatternFill("solid", start_color=FOODORA_PINK.lstrip("#"))
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF", name="Arial")
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    title_key = f"Title_en_{market_lang}"
-    desc_key = f"Description_en_{market_lang}"
-    var_key = f"Variation_title_en_{market_lang}"
-
-    price_col_idx = MDS_COLUMNS.index("Price") + 1
+    price_col_idx = EXPORT_COLUMNS.index("Pris (NOK)") + 1
+    unclear_col_idx = EXPORT_COLUMNS.index("Uklarheter") + 1
     red_fill = PatternFill("solid", start_color="FFD6D6")
+    yellow_fill = PatternFill("solid", start_color="FFF2CC")
 
-    for idx, r in df.iterrows():
-        record = {c: "" for c in MDS_COLUMNS}
-        record[title_key] = r["Tittel"]
-        record[desc_key] = r["Beskrivelse"]
-        record[var_key] = r["Variant"]
-        record["Description_type"] = "VENDOR"
-        record["Pre - packed"] = "FALSE"
-        record["Active"] = "TRUE"
-        record["Price"] = r["Pris (NOK)"]
-        record["Allergens"] = r["Allergener"]
-        if idx in growth_plus_indices:
-            record["Growth_Plus"] = "TRUE"
-        ws.append([record[c] for c in MDS_COLUMNS])
+    for _, r in df.iterrows():
+        ws.append([r.get(c, "") for c in EXPORT_COLUMNS])
+        row_num = ws.max_row
 
-        # Mangler pris -> marker Price-cella rodt.
-        if not r["Pris (NOK)"] or r["Pris (NOK)"] == 0:
-            ws.cell(row=ws.max_row, column=price_col_idx).fill = red_fill
+        # Mangler pris -> rod.
+        if not r.get("Pris (NOK)") or r.get("Pris (NOK)") == 0:
+            ws.cell(row=row_num, column=price_col_idx).fill = red_fill
+        # Har uklarheter -> gul markering paa den kolonna.
+        if str(r.get("Uklarheter", "")).strip():
+            ws.cell(row=row_num, column=unclear_col_idx).fill = yellow_fill
 
-    for col_idx, name in enumerate(MDS_COLUMNS, start=1):
+    # Kolonnebredder tilpasset innhold.
+    widths = {
+        "Kategori": 18, "Tittel": 26, "Variant": 14,
+        "Beskrivelse": 55, "Pris (NOK)": 12, "Allergener": 30,
+        "Tilleggsvalg": 45, "Growth+": 10, "Uklarheter": 30,
+    }
+    for col_idx, name in enumerate(EXPORT_COLUMNS, start=1):
         letter = ws.cell(row=1, column=col_idx).column_letter
-        if name.startswith("Description"):
-            ws.column_dimensions[letter].width = 45
-        elif name.startswith("Title") or name == "Allergens":
-            ws.column_dimensions[letter].width = 28
-        else:
-            ws.column_dimensions[letter].width = 16
+        ws.column_dimensions[letter].width = widths.get(name, 18)
+
+    # Tekstbryting paa lange kolonner slik at agenten ser hele teksten.
+    wrap = Alignment(wrap_text=True, vertical="top")
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+        for cell in row:
+            cell.alignment = wrap
 
     ws.freeze_panes = "A2"
 
@@ -484,13 +489,16 @@ if st.session_state.menu_df is not None:
             use_container_width=True,
             num_rows="dynamic",
             column_config={
+                "Kategori": st.column_config.TextColumn(width="small"),
                 "Tittel": st.column_config.TextColumn(width="medium"),
-                "Beskrivelse": st.column_config.TextColumn(width="large"),
                 "Variant": st.column_config.TextColumn(width="small"),
+                "Beskrivelse": st.column_config.TextColumn(width="large"),
                 "Pris (NOK)": st.column_config.NumberColumn(
                     format="%.0f", min_value=0),
-                "Kategori": st.column_config.TextColumn(width="small"),
                 "Allergener": st.column_config.TextColumn(width="medium"),
+                "Tilleggsvalg": st.column_config.TextColumn(width="large"),
+                "Growth+": st.column_config.TextColumn(width="small"),
+                "Uklarheter": st.column_config.TextColumn(width="medium"),
             },
             key="editor",
         )
@@ -502,14 +510,55 @@ if st.session_state.menu_df is not None:
     # Det vi viser videre er den sist lagrede versjonen.
     edited = st.session_state.menu_df
 
+    # --- Sok og erstatt ------------------------------------------------------
+    with st.expander("\U0001F50D S\u00f8k og erstatt"):
+        st.caption("Erstatt tekst p\u00e5 tvers av flere rader p\u00e5 en gang. "
+                   "Case-sensitiv. Trykk **Erstatt** for \u00e5 gj\u00f8re "
+                   "endringen.")
+        c1, c2, c3 = st.columns([2, 2, 2])
+        with c1:
+            sr_find = st.text_input("S\u00f8k etter", key="sr_find")
+        with c2:
+            sr_repl = st.text_input("Erstatt med", key="sr_repl")
+        with c3:
+            sr_cols = st.multiselect(
+                "I kolonner",
+                options=["Tittel", "Beskrivelse", "Variant", "Kategori",
+                         "Allergener", "Tilleggsvalg", "Uklarheter"],
+                default=["Tittel", "Beskrivelse"],
+                key="sr_cols",
+            )
+        # Forhaandsvis antall treff for tilbakemelding.
+        if sr_find and sr_cols:
+            hits = 0
+            for c in sr_cols:
+                hits += edited[c].fillna("").astype(str).str.count(
+                    re.escape(sr_find)).sum()
+            st.caption(f"Fant **{int(hits)}** forekomst(er) av "
+                       f"«{sr_find}» i valgte kolonner.")
+        if st.button("Erstatt", key="sr_do",
+                     disabled=not (sr_find and sr_cols)):
+            new_df = edited.copy()
+            for c in sr_cols:
+                new_df[c] = new_df[c].fillna("").astype(str).str.replace(
+                    sr_find, sr_repl, regex=False)
+            st.session_state.menu_df = new_df
+            st.success(f"Erstattet «{sr_find}» med «{sr_repl}» i "
+                       f"{len(sr_cols)} kolonne(r).")
+            st.rerun()
+
     missing_mask = edited["Pris (NOK)"] == 0
     missing_price = int(missing_mask.sum())
     missing_allergens = int((edited["Allergener"].fillna("").str.strip()
                              == "").sum())
-    c1, c2, c3 = st.columns(3)
+    unclear_mask = edited["Uklarheter"].fillna("").str.strip() != ""
+    unclear_count = int(unclear_mask.sum())
+
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Retter", len(edited))
     c2.metric("Mangler pris", missing_price)
     c3.metric("Mangler allergener", missing_allergens)
+    c4.metric("Uklarheter", unclear_count)
 
     if missing_price:
         manglende = edited.loc[missing_mask, "Tittel"].tolist()
@@ -520,6 +569,12 @@ if st.session_state.menu_df is not None:
     if missing_allergens:
         st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
+    if unclear_count:
+        st.warning(
+            f"{unclear_count} rett(er) har uklare formuleringer "
+            "(kolonnen «Uklarheter»). Spesifiser dette med vendoren "
+            "f\u00f8r menyen g\u00e5r gjennom kontroll."
+        )
 
     # --- Forhaandsvisning av prisjustering -----------------------------------
     def _apply_adjustment(prices):
@@ -556,7 +611,7 @@ if st.session_state.menu_df is not None:
 
     growth_indices = []
     if sold_growth == "Ja":
-        # Bygg valg: "indeks: Tittel (Variant)" saa identiske titler skilles.
+        # Bygg valg: "Tittel - Variant" saa identiske titler skilles.
         def _label(idx, row):
             t = str(row["Tittel"]).strip() or "(uten tittel)"
             v = str(row["Variant"]).strip()
@@ -576,14 +631,16 @@ if st.session_state.menu_df is not None:
                     f"{len(picked)}.")
         else:
             st.success("2 retter valgt \u2013 merkes med TRUE i "
-                       "Growth_Plus-kolonnen.")
+                       "Growth+-kolonnen.")
 
     st.divider()
 
-    # Anvend prosent-paaslag paa prisene for eksport.
+    # Anvend prisjustering og Growth+-merking paa eksport-dataframe.
     export_df = edited.copy()
     if adjustment_active:
         export_df["Pris (NOK)"] = _apply_adjustment(export_df["Pris (NOK)"])
+    if growth_indices:
+        export_df.loc[growth_indices, "Growth+"] = "TRUE"
 
     export_name = build_export_filename(vendor_name, grid_id)
     if not vendor_name or not grid_id:
@@ -592,10 +649,9 @@ if st.session_state.menu_df is not None:
     else:
         st.caption(f"Fila lastes ned som: **{export_name}**")
 
-    excel_buf = build_mds_excel(
-        export_df, market_lang=market, growth_plus_indices=growth_indices)
+    excel_buf = build_export_excel(export_df)
     st.download_button(
-        "\u2b07\ufe0f Last ned MDS-Excel",
+        "\u2b07\ufe0f Last ned Excel",
         data=excel_buf,
         file_name=export_name,
         mime="application/vnd.openxmlformats-officedocument."
