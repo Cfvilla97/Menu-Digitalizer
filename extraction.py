@@ -40,8 +40,7 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
       "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng",
       "allergens": "Gluten, Melk, Egg",
-      "add_ons": "Ekstra: Ost +20 kr, Bacon +25 kr; Drikke: Cola, Sprite, Fanta",
-      "unclear": "Tilbehor ikke spesifisert"
+      "add_ons": "Ekstra: Ost +20 kr, Bacon +25 kr; Drikke: Cola, Sprite, Fanta"
     }
   ]
 }
@@ -127,14 +126,11 @@ ADD_ONS - tilleggsvalg og valgfrie ekstra som staar paa menyen:
 - Ta bare med tilleggsvalg som ER paa menyen, ikke dikt opp.
 - Tom streng hvis menyen ikke oppgir noen tilleggsvalg for denne retten.
 
-UNCLEAR - fraser som ikke er tydelige nok:
+UKLARE FRASER:
 - Hvis retten sier ting som "med tilbehor", "med saus", "med garnityr"
-  UTEN aa spesifisere hva tilbehoret/sausen/garnityret er, skriv en
-  kort beskrivelse i "unclear"-feltet. Eksempler: "Tilbehor ikke
-  spesifisert", "Sausen er ikke definert".
-- FJERN samtidig den uklare frasen fra "description". Selgeren maa
-  avklare med vendoren for menyen kan publiseres.
-- Tom streng hvis alt er tydelig.
+  UTEN aa spesifisere hva tilbehoret/sausen/garnityret er, FJERN den
+  uklare frasen fra "description". Ikke marker den, ikke kommenter -
+  bare la den vaere borte. Resten av beskrivelsen beholdes.
 """
 
 
