@@ -30,7 +30,6 @@ EXPORT_COLUMNS = [
     "Allergener",
     "Tilleggsvalg",
     "Growth+",
-    "Uklarheter",
 ]
 
 # --- foodora / Delivery Hero fargepalett ------------------------------------
@@ -247,10 +246,6 @@ def items_to_dataframe(items):
         # Tilleggsvalg: fritekst-sammendrag som modellen bygger fra menyen.
         add_ons = str(it.get("add_ons", "")).strip()
 
-        # Uklarheter: hvis modellen fant noe udefinert (f.eks. "med saus"
-        # uten aa spesifisere hva), listes det her for selgeren.
-        unclear = str(it.get("unclear", "")).strip()
-
         rows.append({
             "Kategori": str(it.get("category", "")).strip(),
             "Tittel": title,
@@ -260,7 +255,6 @@ def items_to_dataframe(items):
             "Allergener": allergens,
             "Tilleggsvalg": add_ons,
             "Growth+": "",  # settes senere naar selger velger Growth+-retter
-            "Uklarheter": unclear,
         })
     return pd.DataFrame(rows, columns=EXPORT_COLUMNS)
 
@@ -297,9 +291,7 @@ def build_export_excel(df):
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
     price_col_idx = EXPORT_COLUMNS.index("Pris (NOK)") + 1
-    unclear_col_idx = EXPORT_COLUMNS.index("Uklarheter") + 1
     red_fill = PatternFill("solid", start_color="FFD6D6")
-    yellow_fill = PatternFill("solid", start_color="FFF2CC")
 
     for _, r in df.iterrows():
         ws.append([r.get(c, "") for c in EXPORT_COLUMNS])
@@ -308,15 +300,12 @@ def build_export_excel(df):
         # Mangler pris -> rod.
         if not r.get("Pris (NOK)") or r.get("Pris (NOK)") == 0:
             ws.cell(row=row_num, column=price_col_idx).fill = red_fill
-        # Har uklarheter -> gul markering paa den kolonna.
-        if str(r.get("Uklarheter", "")).strip():
-            ws.cell(row=row_num, column=unclear_col_idx).fill = yellow_fill
 
     # Kolonnebredder tilpasset innhold.
     widths = {
         "Kategori": 18, "Tittel": 26, "Variant": 14,
         "Beskrivelse": 55, "Pris (NOK)": 12, "Allergener": 30,
-        "Tilleggsvalg": 45, "Growth+": 10, "Uklarheter": 30,
+        "Tilleggsvalg": 45, "Growth+": 10,
     }
     for col_idx, name in enumerate(EXPORT_COLUMNS, start=1):
         letter = ws.cell(row=1, column=col_idx).column_letter
@@ -498,7 +487,6 @@ if st.session_state.menu_df is not None:
                 "Allergener": st.column_config.TextColumn(width="medium"),
                 "Tilleggsvalg": st.column_config.TextColumn(width="large"),
                 "Growth+": st.column_config.TextColumn(width="small"),
-                "Uklarheter": st.column_config.TextColumn(width="medium"),
             },
             key="editor",
         )
@@ -524,7 +512,7 @@ if st.session_state.menu_df is not None:
             sr_cols = st.multiselect(
                 "I kolonner",
                 options=["Tittel", "Beskrivelse", "Variant", "Kategori",
-                         "Allergener", "Tilleggsvalg", "Uklarheter"],
+                         "Allergener", "Tilleggsvalg"],
                 default=["Tittel", "Beskrivelse"],
                 key="sr_cols",
             )
@@ -551,14 +539,11 @@ if st.session_state.menu_df is not None:
     missing_price = int(missing_mask.sum())
     missing_allergens = int((edited["Allergener"].fillna("").str.strip()
                              == "").sum())
-    unclear_mask = edited["Uklarheter"].fillna("").str.strip() != ""
-    unclear_count = int(unclear_mask.sum())
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     c1.metric("Retter", len(edited))
     c2.metric("Mangler pris", missing_price)
     c3.metric("Mangler allergener", missing_allergens)
-    c4.metric("Uklarheter", unclear_count)
 
     if missing_price:
         manglende = edited.loc[missing_mask, "Tittel"].tolist()
@@ -569,12 +554,6 @@ if st.session_state.menu_df is not None:
     if missing_allergens:
         st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
-    if unclear_count:
-        st.warning(
-            f"{unclear_count} rett(er) har uklare formuleringer "
-            "(kolonnen «Uklarheter»). Spesifiser dette med vendoren "
-            "f\u00f8r menyen g\u00e5r gjennom kontroll."
-        )
 
     # --- Forhaandsvisning av prisjustering -----------------------------------
     def _apply_adjustment(prices):
