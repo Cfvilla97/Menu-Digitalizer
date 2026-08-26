@@ -112,6 +112,16 @@ ALLERGENS - list forventede allergener for HVER rett:
   mye enn en for lite. En kunde med allergi kan bli syk hvis vi
   underrapporterer - overrapportering er bare litt overforsiktig.
 
+- WOLT-MENYER: Menyer eksportert som PDF fra Wolt viser ofte
+  allergener som SMAA IKONER ved siden av rettnavnet eller under
+  beskrivelsen (hveteaks = gluten, melkekartong = melk, egg-ikon =
+  egg, fisk-ikon = fisk, notte-ikon = notter, osv.). Se aktivt etter
+  slike ikoner - de er lette aa gaa glipp av. Ogsaa: Wolt bruker
+  ordene "kan inneholde" og "inneholder" - begge deler skal tolkes
+  som at allergenet MAA med. Ser du en meny som ligner Wolt sin
+  layout (rett med lite ikon-strip under), gjor et ekstra sokk paa
+  ikonene for hver rett.
+
 - BOKSTAVKODER: G=Gluten, M=Melk, E=Egg, N=Notter, F=Fisk, Sk=Skalldyr.
   Bruk menyens egen tegnforklaring hvis den finnes.
 - Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
