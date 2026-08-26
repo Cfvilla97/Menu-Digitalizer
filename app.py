@@ -28,9 +28,16 @@ EXPORT_COLUMNS = [
     "Beskrivelse",
     "Pris (NOK)",
     "Allergener",
+    "Status",
     "Tilleggsvalg",
     "Growth+",
 ]
+
+# Statusverdier for allergen-bekreftelse per rad.
+STATUS_UBEKREFTET = "Ubekreftet"
+STATUS_BEKREFTET = "Bekreftet"
+STATUS_IKKE_AKTUELT = "Ikke aktuelt"
+STATUS_OPTIONS = [STATUS_UBEKREFTET, STATUS_BEKREFTET, STATUS_IKKE_AKTUELT]
 
 # --- foodora / Delivery Hero fargepalett ------------------------------------
 FOODORA_PINK = "#FF1F62"
@@ -253,6 +260,7 @@ def items_to_dataframe(items):
             "Beskrivelse": desc,
             "Pris (NOK)": price if price is not None else 0.0,
             "Allergener": allergens,
+            "Status": STATUS_UBEKREFTET,
             "Tilleggsvalg": add_ons,
             "Growth+": "",  # settes senere naar selger velger Growth+-retter
         })
@@ -291,7 +299,11 @@ def build_export_excel(df):
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
     price_col_idx = EXPORT_COLUMNS.index("Pris (NOK)") + 1
+    status_col_idx = EXPORT_COLUMNS.index("Status") + 1
     red_fill = PatternFill("solid", start_color="FFD6D6")
+    green_fill = PatternFill("solid", start_color="D4EDDA")
+    yellow_fill = PatternFill("solid", start_color="FFF2CC")
+    gray_fill = PatternFill("solid", start_color="E9ECEF")
 
     for _, r in df.iterrows():
         ws.append([r.get(c, "") for c in EXPORT_COLUMNS])
@@ -301,11 +313,20 @@ def build_export_excel(df):
         if not r.get("Pris (NOK)") or r.get("Pris (NOK)") == 0:
             ws.cell(row=row_num, column=price_col_idx).fill = red_fill
 
+        # Status-fargekoding.
+        status = str(r.get("Status", "")).strip()
+        if status == STATUS_BEKREFTET:
+            ws.cell(row=row_num, column=status_col_idx).fill = green_fill
+        elif status == STATUS_UBEKREFTET:
+            ws.cell(row=row_num, column=status_col_idx).fill = yellow_fill
+        elif status == STATUS_IKKE_AKTUELT:
+            ws.cell(row=row_num, column=status_col_idx).fill = gray_fill
+
     # Kolonnebredder tilpasset innhold.
     widths = {
         "Kategori": 18, "Tittel": 26, "Variant": 14,
         "Beskrivelse": 55, "Pris (NOK)": 12, "Allergener": 30,
-        "Tilleggsvalg": 45, "Growth+": 10,
+        "Status": 14, "Tilleggsvalg": 45, "Growth+": 10,
     }
     for col_idx, name in enumerate(EXPORT_COLUMNS, start=1):
         letter = ws.cell(row=1, column=col_idx).column_letter
@@ -485,6 +506,12 @@ if st.session_state.menu_df is not None:
                 "Pris (NOK)": st.column_config.NumberColumn(
                     format="%.0f", min_value=0),
                 "Allergener": st.column_config.TextColumn(width="medium"),
+                "Status": st.column_config.SelectboxColumn(
+                    width="small",
+                    options=STATUS_OPTIONS,
+                    required=True,
+                    help="Bekreft allergener mot vendor for hver rett.",
+                ),
                 "Tilleggsvalg": st.column_config.TextColumn(width="large"),
                 "Growth+": st.column_config.TextColumn(width="small"),
             },
@@ -539,11 +566,15 @@ if st.session_state.menu_df is not None:
     missing_price = int(missing_mask.sum())
     missing_allergens = int((edited["Allergener"].fillna("").str.strip()
                              == "").sum())
+    total_rows = len(edited)
+    confirmed = int((edited["Status"] == STATUS_BEKREFTET).sum())
+    unconfirmed = int((edited["Status"] == STATUS_UBEKREFTET).sum())
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Retter", len(edited))
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Retter", total_rows)
     c2.metric("Mangler pris", missing_price)
     c3.metric("Mangler allergener", missing_allergens)
+    c4.metric("Allergener bekreftet", f"{confirmed}/{total_rows}")
 
     if missing_price:
         manglende = edited.loc[missing_mask, "Tittel"].tolist()
@@ -554,6 +585,12 @@ if st.session_state.menu_df is not None:
     if missing_allergens:
         st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
                    "fyll inn f\u00f8r eksport.")
+    if unconfirmed:
+        st.warning(
+            f"\U0001F514 {unconfirmed} rett(er) har fortsatt status "
+            "**Ubekreftet**. Gaa gjennom allergenene med vendoren og "
+            "sett status til *Bekreftet* pr rad f\u00f8r du laster ned."
+        )
 
     # --- Forhaandsvisning av prisjustering -----------------------------------
     def _apply_adjustment(prices):
