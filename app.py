@@ -247,10 +247,13 @@ def items_to_dataframe(items):
         desc = to_sentence_case(str(it.get("description", "")).strip())
         price = it.get("price")
 
-        # Allergener kommer ferdig vurdert fra modellen, som ren liste.
-        allergens = str(it.get("allergens", "")).strip()
+        # To separate allergen-felt:
+        # - menu_allergens: kun det restauranten selv har oppgitt
+        # - suggested_allergens: modellens typiske forslag (vises som
+        #   forslag under gridet, ikke i Allergener-kolonnen)
+        menu_al = str(it.get("menu_allergens", "")).strip()
+        sug_al = str(it.get("suggested_allergens", "")).strip()
 
-        # Tilleggsvalg: fritekst-sammendrag som modellen bygger fra menyen.
         add_ons = str(it.get("add_ons", "")).strip()
 
         rows.append({
@@ -259,12 +262,14 @@ def items_to_dataframe(items):
             "Variant": str(it.get("variation", "")).strip(),
             "Beskrivelse": desc,
             "Pris (NOK)": price if price is not None else 0.0,
-            "Allergener": allergens,
+            "Allergener": menu_al,   # starter som det menyen sa (kan vaere tomt)
             "Status": STATUS_UBEKREFTET,
             "Tilleggsvalg": add_ons,
-            "Growth+": "",  # settes senere naar selger velger Growth+-retter
+            "Growth+": "",
+            "_Forslag": sug_al,      # skjult kolonne - brukes i forslagspanel
         })
-    return pd.DataFrame(rows, columns=EXPORT_COLUMNS)
+    # Skjulte kolonner starter med underscore og filtreres bort ved eksport.
+    return pd.DataFrame(rows, columns=EXPORT_COLUMNS + ["_Forslag"])
 
 
 def safe_filename_part(text):
@@ -514,6 +519,7 @@ if st.session_state.menu_df is not None:
                 ),
                 "Tilleggsvalg": st.column_config.TextColumn(width="large"),
                 "Growth+": st.column_config.TextColumn(width="small"),
+                "_Forslag": None,  # skjul: brukes bare i forslagspanel
             },
             key="editor",
         )
@@ -524,6 +530,68 @@ if st.session_state.menu_df is not None:
 
     # Det vi viser videre er den sist lagrede versjonen.
     edited = st.session_state.menu_df
+
+    # --- Forslagspanel: allergener modellen mener er typiske ----------------
+    def _merge_allergens(current, added):
+        """Slaa sammen kommaseparerte allergenlister uten duplikater."""
+        cur = [a.strip() for a in (current or "").split(",") if a.strip()]
+        add = [a.strip() for a in (added or "").split(",") if a.strip()]
+        seen = {a.lower(): a for a in cur}
+        for a in add:
+            if a.lower() not in seen:
+                seen[a.lower()] = a
+                cur.append(a)
+        return ", ".join(cur)
+
+    open_suggestions = edited[
+        edited["_Forslag"].fillna("").str.strip() != ""
+    ]
+
+    if len(open_suggestions) > 0:
+        st.subheader(
+            f"\U0001F4A1 Forslag til ekstra allergener "
+            f"({len(open_suggestions)})"
+        )
+        st.caption(
+            "Modellen mener disse allergenene er typiske for retten, "
+            "men de sto ikke paa menyen. Vurder hver enkelt: **Godta** "
+            "legger dem til i Allergener-kolonnen, **Avvis** fjerner "
+            "forslaget. Redigering gjor du direkte i Allergener-cellen "
+            "i tabellen over."
+        )
+
+        for idx, row in open_suggestions.iterrows():
+            title = str(row["Tittel"]).strip()
+            variant = str(row["Variant"]).strip()
+            label = f"{title} \u2013 {variant}" if variant else title
+            current = str(row["Allergener"]).strip() or "*(ingen)*"
+            suggested = str(row["_Forslag"]).strip()
+
+            with st.container(border=True):
+                cc1, cc2, cc3, cc4 = st.columns([3, 3, 1, 1])
+                with cc1:
+                    st.markdown(f"**{label}**")
+                    st.caption(f"Fra meny: {current}")
+                with cc2:
+                    st.markdown(f"Forslag: **{suggested}**")
+                with cc3:
+                    if st.button("\u2705 Godta", key=f"acc_{idx}",
+                                 use_container_width=True):
+                        new_df = st.session_state.menu_df.copy()
+                        new_df.at[idx, "Allergener"] = _merge_allergens(
+                            new_df.at[idx, "Allergener"], suggested)
+                        new_df.at[idx, "_Forslag"] = ""
+                        st.session_state.menu_df = new_df
+                        st.rerun()
+                with cc4:
+                    if st.button("\u274c Avvis", key=f"rej_{idx}",
+                                 use_container_width=True):
+                        new_df = st.session_state.menu_df.copy()
+                        new_df.at[idx, "_Forslag"] = ""
+                        st.session_state.menu_df = new_df
+                        st.rerun()
+    else:
+        st.success("\u2705 Ingen ubehandlede allergen-forslag.")
 
     # --- Sok og erstatt ------------------------------------------------------
     with st.expander("\U0001F50D S\u00f8k og erstatt"):
