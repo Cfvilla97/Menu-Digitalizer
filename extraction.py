@@ -39,7 +39,8 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
       "price": 189.0,
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
       "category": "Kategori-overskrift fra menyen hvis synlig, ellers tom streng",
-      "allergens": "Gluten, Melk, Egg",
+      "menu_allergens": "Gluten, Melk",
+      "suggested_allergens": "Egg",
       "add_ons": "Ekstra: Ost +20 kr, Bacon +25 kr; Drikke: Cola, Sprite, Fanta"
     }
   ]
@@ -86,18 +87,22 @@ BESKRIVELSE - dette feltet skal ALLTID fylles ut, aldri tom:
   Ost +20 kr, Bacon +25 kr".
 - Skriv i sentence case. Avslutt ALLTID med punktum.
 
-ALLERGENS - list forventede allergener for HVER rett:
+ALLERGENER - to felt, viktig aa holde adskilt:
 - Bruk de 14 EU-allergenene: Gluten, Skalldyr, Egg, Fisk, Peanotter, Soya,
   Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
 
-- REGEL 1 (VIKTIGST): Hvis menyen eksplisitt oppgir at retten inneholder
-  en allergen - enten som ord ("inneholder gluten", "med melk") eller som
-  bokstavkode ("(G, M)") eller ikon - MAA den allergenen ALLTID med i
-  "allergens". IKKE fjern den. IKKE gjett at den er feil. Det som staar
-  paa menyen er fasit og skal med, uten unntak.
+- "menu_allergens" (STAAR PAA MENYEN): KUN allergener som er eksplisitt
+  angitt av restauranten - som ord ("inneholder gluten", "med melk"),
+  bokstavkode ("(G, M)"), eller ikon (hveteaks, melkekartong, egg,
+  fisk, notter, osv.). IKKE dine egne antakelser. Hvis menyen ikke
+  oppgir noen allergener for denne retten, la feltet vaere tom streng.
+  Dette blir det restauranten har sagt - fasit.
 
-- REGEL 2: I tillegg til det menyen sier, ta med allergener som er
-  typiske for retten:
+- "suggested_allergens" (TYPISKE FOR RETTEN, IKKE PAA MENYEN):
+  Allergener du VET er typiske for retten men som IKKE staar eksplisitt
+  paa menyen. Ta ALDRI med det samme allergenet i begge feltene - hvis
+  det staar i menu_allergens, IKKE ta det med i suggested_allergens.
+  Typiske allergener per rett:
   * Pizza -> Gluten, Melk
   * Pad Thai -> Peanotter, Egg, Fisk
   * Kimchi -> Fisk (koreansk kimchi inneholder som regel fiskesaus)
@@ -105,29 +110,29 @@ ALLERGENS - list forventede allergener for HVER rett:
   * Sushi, nigiri, maki -> Fisk, Soya, Sesam (og Skalldyr for rekesushi)
   * Burger -> Gluten, Melk (brod og ost)
   * Kebab -> Gluten (brod), evt. Melk hvis saus
-  * Wok med soyasaus -> Gluten (soyasaus har hvete), Soya
+  * Wok med soyasaus -> Gluten, Soya
   * Tikka masala, curry -> Melk (flote/yoghurt)
-
-- REGEL 3: Ved tvil, TA MED. Det er tryggere aa liste en allergen for
-  mye enn en for lite. En kunde med allergi kan bli syk hvis vi
-  underrapporterer - overrapportering er bare litt overforsiktig.
+  Hvis alle typiske allergener allerede staar i menu_allergens, la
+  suggested_allergens vaere tom streng.
 
 - WOLT-MENYER: Menyer eksportert som PDF fra Wolt viser ofte
   allergener som SMAA IKONER ved siden av rettnavnet eller under
   beskrivelsen (hveteaks = gluten, melkekartong = melk, egg-ikon =
-  egg, fisk-ikon = fisk, notte-ikon = notter, osv.). Se aktivt etter
-  slike ikoner - de er lette aa gaa glipp av. Ogsaa: Wolt bruker
-  ordene "kan inneholde" og "inneholder" - begge deler skal tolkes
-  som at allergenet MAA med. Ser du en meny som ligner Wolt sin
-  layout (rett med lite ikon-strip under), gjor et ekstra sokk paa
-  ikonene for hver rett.
+  egg, fisk-ikon = fisk, notte-ikon = notter, osv.). Disse skal
+  regnes som eksplisitt oppgitt av restauranten og gaa i
+  menu_allergens. Bade "kan inneholde" og "inneholder" tolkes som
+  eksplisitt angitt.
 
 - BOKSTAVKODER: G=Gluten, M=Melk, E=Egg, N=Notter, F=Fisk, Sk=Skalldyr.
-  Bruk menyens egen tegnforklaring hvis den finnes.
-- Skriv KUN allergennavnene, kommaseparert: "Gluten, Melk, Egg".
-- IKKE skriv "antatt", "bekreft", "typisk" - bare navnene.
+  Bruk menyens egen tegnforklaring hvis den finnes. Disse kodene er
+  restaurantens egen angivelse og gaar i menu_allergens.
+
+- Skriv KUN allergennavnene i hvert felt, kommaseparert.
+- IKKE skriv "antatt", "bekreft", "typisk" i noen av feltene.
 - For RENE produkter uten noen av de 14 (brus, vann, juice, sort kaffe,
-  fersk frukt): skriv "Ingen allergener".
+  fersk frukt): la begge felt vaere tomme strenger. Selgeren markerer
+  senere at retten ikke har allergener.
+
 
 ADD_ONS - tilleggsvalg og valgfrie ekstra som staar paa menyen:
 - Format: "Kategori: valg1, valg2, ...; Kategori2: ...".
