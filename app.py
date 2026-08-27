@@ -254,6 +254,16 @@ def items_to_dataframe(items):
         menu_al = str(it.get("menu_allergens", "")).strip()
         sug_al = str(it.get("suggested_allergens", "")).strip()
 
+        # Filtrer bort "Ingen allergener"-tekst hvis modellen skulle
+        # skrive den - vi vil ha ekte tomme felt slik at forslagspanelet
+        # utloses og selgeren tar en aktiv beslutning.
+        if menu_al.lower() in ("ingen allergener", "ingen", "none",
+                                "n/a", "-"):
+            menu_al = ""
+        if sug_al.lower() in ("ingen allergener", "ingen", "none",
+                               "n/a", "-"):
+            sug_al = ""
+
         add_ons = str(it.get("add_ons", "")).strip()
 
         rows.append({
