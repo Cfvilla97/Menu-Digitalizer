@@ -266,13 +266,20 @@ def items_to_dataframe(items):
 
         add_ons = str(it.get("add_ons", "")).strip()
 
+        # Hvis modellen fant ingen allergener OG heller ingen forslag,
+        # sett "Ingen allergener" med en gang - da slipper selgeren aa
+        # skrive det inn manuelt.
+        allergener_display = menu_al
+        if not menu_al and not sug_al:
+            allergener_display = "Ingen allergener"
+
         rows.append({
             "Kategori": str(it.get("category", "")).strip(),
             "Tittel": title,
             "Variant": str(it.get("variation", "")).strip(),
             "Beskrivelse": desc,
             "Pris (NOK)": price if price is not None else 0.0,
-            "Allergener": menu_al,   # starter som det menyen sa (kan vaere tomt)
+            "Allergener": allergener_display,
             "Status": STATUS_UBEKREFTET,
             "Tilleggsvalg": add_ons,
             "Growth+": "",
@@ -598,6 +605,12 @@ if st.session_state.menu_df is not None:
                                  use_container_width=True):
                         new_df = st.session_state.menu_df.copy()
                         new_df.at[idx, "_Forslag"] = ""
+                        # Hvis Allergener-cella ble tom etter avvisning,
+                        # sett "Ingen allergener" saa selgeren slipper
+                        # aa skrive det inn manuelt.
+                        current = str(new_df.at[idx, "Allergener"]).strip()
+                        if not current:
+                            new_df.at[idx, "Allergener"] = "Ingen allergener"
                         st.session_state.menu_df = new_df
                         st.rerun()
     else:
@@ -642,17 +655,14 @@ if st.session_state.menu_df is not None:
 
     missing_mask = edited["Pris (NOK)"] == 0
     missing_price = int(missing_mask.sum())
-    missing_allergens = int((edited["Allergener"].fillna("").str.strip()
-                             == "").sum())
     total_rows = len(edited)
     confirmed = int((edited["Status"] == STATUS_BEKREFTET).sum())
     unconfirmed = int((edited["Status"] == STATUS_UBEKREFTET).sum())
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     c1.metric("Retter", total_rows)
     c2.metric("Mangler pris", missing_price)
-    c3.metric("Mangler allergener", missing_allergens)
-    c4.metric("Allergener bekreftet", f"{confirmed}/{total_rows}")
+    c3.metric("Allergener bekreftet", f"{confirmed}/{total_rows}")
 
     if missing_price:
         manglende = edited.loc[missing_mask, "Tittel"].tolist()
@@ -660,9 +670,6 @@ if st.session_state.menu_df is not None:
         st.error(f"\u26a0\ufe0f {missing_price} rett(er) mangler pris og er "
                  f"merket r\u00f8dt i eksportfila: {liste}. "
                  "Fyll inn riktig pris f\u00f8r du laster opp menyen.")
-    if missing_allergens:
-        st.warning(f"{missing_allergens} rett(er) mangler allergener \u2013 "
-                   "fyll inn f\u00f8r eksport.")
     if unconfirmed:
         st.warning(
             f"\U0001F514 {unconfirmed} rett(er) har fortsatt status "
@@ -735,6 +742,11 @@ if st.session_state.menu_df is not None:
         export_df["Pris (NOK)"] = _apply_adjustment(export_df["Pris (NOK)"])
     if growth_indices:
         export_df.loc[growth_indices, "Growth+"] = "TRUE"
+
+    # Fallback: tomme Allergener-celler fylles med "Ingen allergener"
+    # slik at eksportfila aldri har en tom allergen-verdi.
+    empty_mask = export_df["Allergener"].fillna("").str.strip() == ""
+    export_df.loc[empty_mask, "Allergener"] = "Ingen allergener"
 
     export_name = build_export_filename(vendor_name, grid_id)
     if not vendor_name or not grid_id:
