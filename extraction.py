@@ -92,46 +92,98 @@ ALLERGENER - to felt, viktig aa holde adskilt:
   Melk, Notter, Selleri, Sennep, Sesam, Sulfitter, Lupin, Blotdyr.
 
 - "menu_allergens" (STAAR PAA MENYEN): KUN allergener som er eksplisitt
-  angitt av restauranten - som ord ("inneholder gluten", "med melk"),
-  bokstavkode ("(G, M)"), eller ikon (hveteaks, melkekartong, egg,
-  fisk, notter, osv.). IKKE dine egne antakelser. Hvis menyen ikke
-  oppgir noen allergener for denne retten, la feltet vaere tom streng.
-  Dette blir det restauranten har sagt - fasit.
+  angitt av restauranten. Se etter ALLE disse formene:
+
+  a) Fritekst som starter med "Inneholder:", "Inneholder", "Kan
+     inneholde", "Contains:", "Allergener:" - alt som staar etter er
+     restaurantens egen liste og MAA med. Denne teksten kan staa som
+     en linje eller fotnote UNDER retten den gjelder for - koble den
+     til retten rett OVER (ikke retten under).
+     Eksempel: "Varruller ... Inneholder: egg, gluten" -> retten
+     Varruller faar menu_allergens = "Egg, Gluten".
+
+  b) Bokstavkoder ved siden av rettnavnet eller etter prisen: "(G, M)",
+     "G,M,E" eller lignende. G=Gluten, M=Melk, E=Egg, N=Notter, F=Fisk,
+     Sk=Skalldyr (bruk menyens egen tegnforklaring hvis den finnes).
+
+  c) Ikoner: hveteaks = Gluten, melkekartong = Melk, egg-ikon = Egg,
+     fisk-ikon = Fisk, notte-ikon = Notter, osv.
+
+  d) Direkte omtale i navn eller beskrivelse: "med melk", "med egg",
+     "inneholder gluten".
+
+  Normaliser til standard-navn (norsk, stor forbokstav): "egg" -> "Egg",
+  "gluten" -> "Gluten", "skalldyr" -> "Skalldyr". Behold rekkefolgen
+  restauranten brukte.
+
+  Hvis menyen ikke oppgir noen allergener for denne retten, la feltet
+  vaere tom streng.
 
 - "suggested_allergens" (TYPISKE FOR RETTEN, IKKE PAA MENYEN):
-  Allergener du VET er typiske for retten men som IKKE staar eksplisitt
-  paa menyen. Ta ALDRI med det samme allergenet i begge feltene - hvis
-  det staar i menu_allergens, IKKE ta det med i suggested_allergens.
-  Typiske allergener per rett:
+  Dette feltet er VIKTIG - de aller fleste retter har typiske
+  allergener som selgeren bor faa forslag paa. Ikke vaer forsiktig -
+  fyll ut naar det er noe naturlig aa foreslaa.
+
+  Tenk gjennom hva retten faktisk inneholder basert paa navn og
+  beskrivelse. Ingredienser som utloser allergener:
+
+  * BROD, PITA, RASJOJ, WRAP, NAAN, BUN, PANKO, TEMPURA, PASTA,
+    NUDLER, MEL -> Gluten
+  * OST, FLOTE, YOGHURT, ROMME, SMOR, MELK, GHEE, KREM, PANEER,
+    ISKREM, IS -> Melk
+  * EGG, MAJONES, AIOLI, BEARNAISE, PANNEKAKE -> Egg
+  * FISK, LAKS, TUNA, ANSJOS, FISKESAUS, NAM PLA, SARDIN -> Fisk
+  * REKER, KRABBE, HUMMER, SCAMPI, LANGUSTER, KREPS -> Skalldyr
+  * BLEKKSPRUT, MUSLING, OSTERS, KAMSKJELL, OYSTERSAUS -> Blotdyr
+  * SOYA, TOFU, EDAMAME, MISO, TERIYAKI, SOYASAUS -> Soya (og
+    SOYASAUS ogsaa Gluten)
+  * MANDEL, CASHEW, VALNOTT, HASSELNOTT, PISTASJ, PEKANNOTT,
+    MACADAMIA -> Notter
+  * PEANOTT, SATAY, SATE -> Peanotter
+  * SESAMFRO, SESAMOLJE, TAHINI -> Sesam
+  * SENNEP, DIJON -> Sennep
+  * SELLERI, SELLERIROT -> Selleri
+  * VIN, EDDIK, BALSAMICO, TORKET FRUKT, ROSIN -> Sulfitter
+
+  Typiske ferdigretter (bruk ogsaa dette som referanse):
   * Pizza -> Gluten, Melk
-  * Pad Thai -> Peanotter, Egg, Fisk
-  * Kimchi -> Fisk (koreansk kimchi inneholder som regel fiskesaus)
-  * Bibimbap, kimbap -> Egg, Fisk, Sesam
-  * Sushi, nigiri, maki -> Fisk, Soya, Sesam (og Skalldyr for rekesushi)
-  * Burger -> Gluten, Melk (brod og ost)
-  * Kebab -> Gluten (brod), evt. Melk hvis saus
+  * Pasta med kremsaus -> Gluten, Melk, Egg
+  * Burger -> Gluten, Melk
+  * Kebab, shawarma -> Gluten, evt. Melk (saus)
+  * Tikka masala, curry med flote/yoghurt -> Melk
+  * Lam/kjott med yoghurt eller ost -> Melk
   * Wok med soyasaus -> Gluten, Soya
-  * Tikka masala, curry -> Melk (flote/yoghurt)
-  Hvis alle typiske allergener allerede staar i menu_allergens, la
-  suggested_allergens vaere tom streng.
+  * Sushi, nigiri, maki -> Fisk, Soya, Sesam (Skalldyr for reke)
+  * Pad Thai -> Peanotter, Egg, Fisk
+  * Kimchi -> Fisk
+  * Bibimbap, kimbap -> Egg, Fisk, Sesam
+  * Miso, misosuppe -> Soya
+  * Foul, hummus, falafel -> vanligvis ingen av de 14, men serveres
+    med brod -> Gluten hvis brod folger med
+  * Salater med feta, ost eller yoghurtsaus -> Melk
+  * Salater med pitabrod, croutonger -> Gluten
+
+  Regel: hvis du finner en typisk allergen som er nevnt i denne lista
+  eller som ingredienslista over peker mot, LEGG DEN I
+  suggested_allergens - selv om du ikke er 100 % sikker. Bedre for
+  selgeren aa fjerne et forslag enn aa gaa glipp av en allergen.
+
+  Unntak: hvis allergenet allerede staar i menu_allergens, IKKE dupliser
+  til suggested_allergens.
+
+  Kun for VIRKELIG rene enkeltprodukter uten tillaging (rent kildevann,
+  fersk hel frukt, sort kaffe, te uten melk, brus som Coca-Cola) skal
+  BAADE menu_allergens OG suggested_allergens vaere tomme strenger.
+  En rett med saus, brod, ost, egg eller kjott skal ALLTID ha noe i
+  minst ett av feltene.
 
 - WOLT-MENYER: Menyer eksportert som PDF fra Wolt viser ofte
   allergener som SMAA IKONER ved siden av rettnavnet eller under
-  beskrivelsen (hveteaks = gluten, melkekartong = melk, egg-ikon =
-  egg, fisk-ikon = fisk, notte-ikon = notter, osv.). Disse skal
-  regnes som eksplisitt oppgitt av restauranten og gaa i
-  menu_allergens. Bade "kan inneholde" og "inneholder" tolkes som
-  eksplisitt angitt.
-
-- BOKSTAVKODER: G=Gluten, M=Melk, E=Egg, N=Notter, F=Fisk, Sk=Skalldyr.
-  Bruk menyens egen tegnforklaring hvis den finnes. Disse kodene er
-  restaurantens egen angivelse og gaar i menu_allergens.
+  beskrivelsen. Disse gaar i menu_allergens.
 
 - Skriv KUN allergennavnene i hvert felt, kommaseparert.
-- IKKE skriv "antatt", "bekreft", "typisk" i noen av feltene.
-- For RENE produkter uten noen av de 14 (brus, vann, juice, sort kaffe,
-  fersk frukt): la begge felt vaere tomme strenger. Selgeren markerer
-  senere at retten ikke har allergener.
+- IKKE skriv "antatt", "bekreft", "typisk", "ingen allergener" i noen
+  av feltene - bare tomme strenger hvis det ikke er noe aa oppgi.
 
 
 ADD_ONS - tilleggsvalg og valgfrie ekstra som staar paa menyen:
