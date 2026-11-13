@@ -34,7 +34,7 @@ Returner KUN gyldig JSON - ingen forklaring, ingen markdown-fences. Format:
 {
   "items": [
     {
-      "title": "Produktnavn slik det staar paa menyen",
+      "title": "Produktnavn (uten ledende nummer)",
       "description": "Beskrivelse av retten. Avsluttes med punktum.",
       "price": 189.0,
       "variation": "Variantnavn hvis retten har varianter, ellers tom streng",
@@ -51,6 +51,17 @@ Viktige regler:
 - Pris skal vaere et tall (decimal). Fjern valutasymboler. Finner du ingen pris, sett null.
 - Ta med ALLE retter, ogsaa drikke og barnemeny.
 - Hvis samme rett staar to ganger paa menyen, ta den med to ganger (selgeren rydder).
+
+TITTEL - viktig: SOP godtar ikke nummer i tittelen:
+- FJERN ledende tall fra rettnavnet. Menyen kan skrive "95. Seafood Delight",
+  "12) Pizza Margherita", "7 - Pad Thai", "M3 Kebab Tallerken" - dette skal
+  bli bare "Seafood Delight", "Pizza Margherita", "Pad Thai", "Kebab Tallerken".
+- Fjern tallet selv, og skilletegnet etter (punktum, parentes, bindestrek,
+  kolon, hakeparenteser). Behold navnet.
+- Unntak: hvis tallet er del av selve rettnavnet (f.eks. "7UP", "Pizza 4
+  Stagioni", "Burger 1888", "Tiger 24"), BEHOLD det. Tommelfingerregel:
+  ledende nummer brukt som LISTENUMMER fjernes; tall som er del av
+  merkenavnet eller har betydning blir.
 
 VARIANTER - dette er viktig, MDS bommer ofte her:
 - Hvis en rett eller drikke tilbys i flere STORRELSER med ulik pris
