@@ -39,198 +39,255 @@ STATUS_BEKREFTET = "Bekreftet"
 STATUS_IKKE_AKTUELT = "Ikke aktuelt"
 STATUS_OPTIONS = [STATUS_UBEKREFTET, STATUS_BEKREFTET, STATUS_IKKE_AKTUELT]
 
-# --- foodora / Delivery Hero fargepalett ------------------------------------
-FOODORA_PINK = "#FF1F62"
-FOODORA_PINK_DARK = "#D81B54"
-
-# Lys/morkt tema-paletter. Selgeren bytter via knapp i sidepanelet.
-THEMES = {
-    "light": {
-        "app_bg":      "#FFFFFF",
-        "ink":         "#1A1A2E",
-        "muted":       "#666874",
-        "soft_bg":     "#FFF5F8",
-        "border":      "#FFD6E2",
-        "input_bg":    "#FFFFFF",
-        "input_text":  "#1A1A2E",
-        "header_bg":   "#FFFFFF",
-        "header_text": "#FFFFFF",  # st.header er hvit boks i lys mode
-        "logo_bg":     "#FFFFFF",
-        "card_text":   "#1A1A2E",
-    },
-    "dark": {
-        "app_bg":      "#15171F",
-        "ink":         "#F5F5F7",
-        "muted":       "#A8AAB8",
-        "soft_bg":     "#23263A",
-        "border":      "#3D4055",
-        "input_bg":    "#2A2E40",
-        "input_text":  "#F5F5F7",
-        "header_bg":   "#15171F",
-        "header_text": "#FFFFFF",
-        "logo_bg":     "#FFFFFF",
-        "card_text":   "#F5F5F7",
-    },
-}
+# --- Pandora designsystem (Digital Sales, Commercial) -----------------------
+# Fargepalett basert paa teamets dashboard-spec.
+PANDORA_PINK = "#FF2B85"
+PANDORA_PURPLE = "#882D80"
+PANDORA_AMBER = "#F7A21B"
+PANDORA_GREEN = "#10B981"
+PANDORA_RED = "#EF4444"
 
 # Marked -> sprakkode. Kun NO aktivt naa; lett aa utvide senere.
 MARKETS = {
     "Norge": "NO",
-    # "Storbritannia": "GB",
-    # "USA": "US",
 }
 
-st.set_page_config(page_title="Menu Digitalizer - foodora",
+st.set_page_config(page_title="Menu Digitalizer - Pandora",
                    page_icon="\U0001F37D", layout="wide")
 
-# Sett standardtema (lyst) ved forste lasting.
-if "theme" not in st.session_state:
-    st.session_state.theme = "light"
-
-T = THEMES[st.session_state.theme]
-DARK = st.session_state.theme == "dark"
-
-# --- Stil: foodora-tema, byttbart mellom lyst og morkt ----------------------
-st.markdown(f"""
+# --- Stil: Pandora-designet, lyst dashboard ---------------------------------
+st.markdown("""
 <style>
-  /* Grunnlag */
-  .stApp {{ background-color: {T['app_bg']}; color: {T['ink']}; }}
+  :root {
+      --pink: #FF2B85;
+      --purple: #882D80;
+      --amber: #F7A21B;
+      --green: #10B981;
+      --red: #EF4444;
+      --grad: linear-gradient(135deg, #FF2B85 0%, #882D80 100%);
+      --bg: #f4f2f5;
+      --surface: #ffffff;
+      --ink: #2d3748;
+      --muted: #718096;
+      --faint: #a0aec0;
+      --border: #e2e8f0;
+      --line: #edf2f7;
+      --pink-50: #fff1f7;
+      --pink-100: #ffe0ee;
+      --pink-200: #ffc2da;
+      --purple-50: #f7eef6;
+      --radius: 16px;
+      --shadow: 0 1px 2px rgba(45,55,72,.05), 0 6px 20px rgba(136,45,128,.06);
+  }
 
-  /* Tekst: alle vanlige tekstelementer respekterer tema */
+  /* Grunnlag - lys lilla-graa sidebakgrunn */
+  .stApp { background-color: var(--bg); color: var(--ink); }
   .stApp, .stApp p, .stApp label, .stApp span, .stApp li,
   .stApp div[data-testid="stMarkdownContainer"],
-  .stApp div[data-testid="stMarkdownContainer"] * {{
-      color: {T['ink']};
-  }}
-  /* Overskrifter MAA staa ut, ogsaa st.subheader */
+  .stApp div[data-testid="stMarkdownContainer"] * {
+      color: var(--ink);
+  }
   .stApp h1, .stApp h2, .stApp h3,
   section[data-testid="stSidebar"] h1,
   section[data-testid="stSidebar"] h2,
-  section[data-testid="stSidebar"] h3 {{
-      color: {T['ink']} !important;
+  section[data-testid="stSidebar"] h3 {
+      color: var(--ink) !important;
       font-weight: 700;
-  }}
-  /* Caption / hjelpetekst - tonet ned, men lesbar */
-  .stApp small, .stApp [data-testid="stCaptionContainer"] {{
-      color: {T['muted']} !important;
-  }}
+      letter-spacing: -0.01em;
+  }
+  .stApp small, .stApp [data-testid="stCaptionContainer"] {
+      color: var(--muted) !important;
+  }
 
-  /* Sidebar */
-  section[data-testid="stSidebar"] {{
-      background-color: {T['soft_bg']};
-      border-right: 1px solid {T['border']};
-  }}
-  section[data-testid="stSidebar"] * {{
-      color: {T['ink']};
-  }}
+  /* Sidebar - hvit overflate */
+  section[data-testid="stSidebar"] {
+      background-color: var(--surface);
+      border-right: 1px solid var(--border);
+  }
+  section[data-testid="stSidebar"] * { color: var(--ink); }
 
-  /* Primaerknapper */
+  /* Primaerknapper - pink */
   .stButton > button[kind="primary"],
   .stDownloadButton > button,
-  .stFormSubmitButton > button {{
-      background-color: {FOODORA_PINK};
+  .stFormSubmitButton > button {
+      background: var(--pink);
       color: #FFFFFF !important;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: 600;
-  }}
+      box-shadow: 0 1px 2px rgba(255,43,133,.2);
+      transition: transform .05s ease, box-shadow .15s ease;
+  }
   .stButton > button[kind="primary"]:hover,
   .stDownloadButton > button:hover,
-  .stFormSubmitButton > button:hover {{
-      background-color: {FOODORA_PINK_DARK};
+  .stFormSubmitButton > button:hover {
+      background: var(--purple);
       color: #FFFFFF !important;
-  }}
-  /* Sekundaerknapper (inkl. tema-toggle) */
-  .stButton > button:not([kind="primary"]) {{
-      background-color: {T['input_bg']};
-      color: {T['ink']};
-      border: 1px solid {T['border']};
-  }}
+      box-shadow: 0 2px 6px rgba(136,45,128,.25);
+  }
+  /* Sekundaerknapper */
+  .stButton > button:not([kind="primary"]) {
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+  }
+  .stButton > button:not([kind="primary"]):hover {
+      border-color: var(--pink);
+      color: var(--pink);
+  }
 
-  /* Tekst- og tallinput, selectbox, radio, multiselect */
-  .stTextInput input, .stNumberInput input, .stTextArea textarea {{
-      background-color: {T['input_bg']} !important;
-      color: {T['input_text']} !important;
-      border: 1px solid {T['border']} !important;
-  }}
+  /* Input, selectbox, radio, multiselect */
+  .stTextInput input, .stNumberInput input, .stTextArea textarea {
+      background: var(--surface) !important;
+      color: var(--ink) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 10px !important;
+  }
+  .stTextInput input:focus, .stNumberInput input:focus,
+  .stTextArea textarea:focus {
+      border-color: var(--pink) !important;
+      box-shadow: 0 0 0 3px var(--pink-50) !important;
+  }
   div[data-baseweb="select"] > div,
   div[data-baseweb="input"] > div,
-  div[data-baseweb="textarea"] > div {{
-      background-color: {T['input_bg']} !important;
-      color: {T['input_text']} !important;
-      border-color: {T['border']} !important;
-  }}
-  div[data-baseweb="select"] * {{ color: {T['input_text']} !important; }}
-  /* Selectbox/Multiselect dropdown-meny */
+  div[data-baseweb="textarea"] > div {
+      background: var(--surface) !important;
+      color: var(--ink) !important;
+      border-color: var(--border) !important;
+      border-radius: 10px !important;
+  }
+  div[data-baseweb="select"] * { color: var(--ink) !important; }
   div[data-baseweb="popover"] li,
-  div[data-baseweb="popover"] div {{
-      background-color: {T['input_bg']} !important;
-      color: {T['input_text']} !important;
-  }}
-  div[data-baseweb="popover"] li:hover {{
-      background-color: {T['soft_bg']} !important;
-  }}
-  /* Radio-tekst */
-  .stRadio label, .stRadio span {{ color: {T['ink']} !important; }}
+  div[data-baseweb="popover"] div {
+      background: var(--surface) !important;
+      color: var(--ink) !important;
+  }
+  div[data-baseweb="popover"] li:hover {
+      background: var(--pink-50) !important;
+  }
+  .stRadio label, .stRadio span { color: var(--ink) !important; }
 
   /* Filopplaster */
-  section[data-testid="stFileUploaderDropzone"] {{
-      background-color: {T['soft_bg']} !important;
-      border: 1px dashed {T['border']} !important;
-  }}
-  section[data-testid="stFileUploaderDropzone"] * {{
-      color: {T['ink']} !important;
-  }}
+  section[data-testid="stFileUploaderDropzone"] {
+      background: var(--purple-50) !important;
+      border: 1px dashed var(--purple) !important;
+      border-radius: var(--radius) !important;
+  }
+  section[data-testid="stFileUploaderDropzone"] * {
+      color: var(--ink) !important;
+  }
 
-  /* Metrikk-kort */
-  div[data-testid="stMetric"] {{
-      background-color: {T['soft_bg']};
-      border: 1px solid {T['border']};
-      border-radius: 10px;
-      padding: 12px 16px;
-  }}
-  div[data-testid="stMetric"] * {{ color: {T['card_text']} !important; }}
+  /* Metrikk-kort - hvite kort med lilla skygge */
+  div[data-testid="stMetric"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+  }
+  div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+      color: var(--pink) !important;
+      font-weight: 700;
+      font-size: 28px;
+  }
+  div[data-testid="stMetric"] [data-testid="stMetricLabel"] {
+      color: var(--muted) !important;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+  }
 
-  /* Tabeller (st.dataframe og data_editor) */
-  .stDataFrame, [data-testid="stDataFrame"] {{
-      background-color: {T['input_bg']} !important;
-  }}
+  /* Tabeller */
+  .stDataFrame, [data-testid="stDataFrame"] {
+      background: var(--surface) !important;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+  }
 
-  /* Info/warning/error-bokser i dark mode trenger tilpasning */
-  {"""
+  /* Alert-bokser - subtile overflater */
   div[data-testid="stAlertContainer"] {
-      background-color: #2A2E40 !important;
+      border-radius: 12px !important;
+      border: 1px solid var(--border) !important;
   }
-  div[data-testid="stAlertContainer"] * {
-      color: #F5F5F7 !important;
-  }
-  """ if DARK else ""}
 
   /* Skille-linjer */
-  hr {{ border-color: {T['border']} !important; }}
+  hr {
+      border-color: var(--line) !important;
+      margin: 20px 0 !important;
+  }
 
-  /* Topp-banner */
-  .md-banner {{
-      background: linear-gradient(135deg, {FOODORA_PINK} 0%, {FOODORA_PINK_DARK} 100%);
+  /* Containere med ramme (st.container(border=True)) */
+  div[data-testid="stVerticalBlockBorderWrapper"] {
+      border-radius: var(--radius) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+  }
+
+  /* Expander - saa den matcher kortstilen */
+  details[data-testid="stExpander"] {
+      border-radius: var(--radius) !important;
+      border: 1px solid var(--border) !important;
+      background: var(--surface) !important;
+      box-shadow: var(--shadow);
+  }
+
+  /* Topp-banner: Pandora-gradient med dekorative sirkler */
+  .md-banner {
+      position: relative;
+      background: var(--grad);
       color: #FFFFFF;
-      padding: 22px 28px;
-      border-radius: 14px;
-      margin-bottom: 18px;
+      padding: 26px 30px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
       gap: 22px;
-  }}
-  .md-banner h1 {{ color: #FFFFFF !important; margin: 0; font-size: 30px; }}
-  .md-banner p  {{ color: #FFE3EC !important; margin: 6px 0 0 0; font-size: 15px; }}
-  .md-logo {{
-      background: {T['logo_bg']};
-      border-radius: 12px;
-      padding: 14px 18px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(136,45,128,.18);
+  }
+  .md-banner::before {
+      content: "";
+      position: absolute;
+      top: -40px; right: -30px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+  }
+  .md-banner::after {
+      content: "";
+      position: absolute;
+      bottom: -60px; right: 80px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+  }
+  .md-banner h1 { color: #FFFFFF !important; margin: 0; font-size: 30px;
+                  font-weight: 700; letter-spacing: -0.02em; position: relative; }
+  .md-banner p  { color: rgba(255,255,255,.88) !important; margin: 6px 0 0 0;
+                  font-size: 15px; position: relative; }
+  .md-logo {
+      background: rgba(255,255,255,.18);
+      border-radius: 14px;
+      width: 46px; height: 46px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
-  }}
-  .md-logo img {{ height: 56px; width: auto; display: block; }}
+      justify-content: center;
+      position: relative;
+      backdrop-filter: blur(4px);
+  }
+  .md-logo img { height: 28px; width: auto; display: block; }
+
+  /* Status-badges - tekst paa tint */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px;
+           font-size: 12px; font-weight: 600; }
+  .badge-success { background: #D1FAE5; color: #047857; }
+  .badge-warning { background: #FEF3C7; color: #B45309; }
+  .badge-danger  { background: #FEE2E2; color: #B91C1C; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -241,9 +298,25 @@ st.markdown(f"""
 
 def items_to_dataframe(items):
     """Gjor raa ekstraksjon om til redigerbart grid med normalisering."""
+
+    def _strip_leading_number(s):
+        """Fjern ledende listenummer: '95. Seafood' -> 'Seafood'.
+        Lar tall som er del av navnet staa: '7UP', 'Pizza 4 Stagioni'."""
+        s = str(s or "").strip()
+        # [23] Sushi -> Sushi
+        m = re.match(r"^\[\s*\d{1,3}\s*\]\s*(.+)$", s)
+        if m:
+            return m.group(1).strip()
+        # 95. Seafood / 12) Pizza / 7 - Pad Thai / 95.Seafood
+        m = re.match(r"^\d{1,3}\s*[.):\-]\s*(.+)$", s)
+        if m:
+            return m.group(1).strip()
+        return s
+
     rows = []
     for it in items:
-        title = to_title_case(str(it.get("title", "")).strip())
+        raw_title = _strip_leading_number(str(it.get("title", "")).strip())
+        title = to_title_case(raw_title)
         desc = to_sentence_case(str(it.get("description", "")).strip())
         price = it.get("price")
 
@@ -314,7 +387,7 @@ def build_export_excel(df):
     ws.title = "Meny"
 
     ws.append(EXPORT_COLUMNS)
-    header_fill = PatternFill("solid", start_color=FOODORA_PINK.lstrip("#"))
+    header_fill = PatternFill("solid", start_color=PANDORA_PINK.lstrip("#"))
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF", name="Arial")
         cell.fill = header_fill
@@ -395,27 +468,14 @@ st.markdown(f"""
 <div class="md-banner">
   {_logo_html}
   <div>
-    <h1>\U0001F37D Menu Digitalizer</h1>
+    <h1>Menu Digitalizer</h1>
     <p>Last opp en meny &rarr; verkt&oslash;yet strukturerer den &rarr;
-       rediger og last ned i MDS-format.</p>
+       rediger og last ned klar for agent.</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    # --- Tema-bytter ---------------------------------------------------------
-    is_dark = st.session_state.theme == "dark"
-    label = "\u2600\ufe0f Lyst tema" if is_dark else "\U0001F319 M\u00f8rkt tema"
-    if st.button(label, use_container_width=True, key="theme_toggle"):
-        st.session_state.theme = "light" if is_dark else "dark"
-        st.rerun()
-    st.caption(
-        "Vil du at temaet skal f\u00f8lge nettleseren automatisk? "
-        "Trykk \u2630-menyen \u00f8verst til h\u00f8yre \u2192 Settings \u2192 "
-        "sett Theme til Auto."
-    )
-
-    st.divider()
     st.header("Innstillinger")
 
     market_name = st.selectbox(
